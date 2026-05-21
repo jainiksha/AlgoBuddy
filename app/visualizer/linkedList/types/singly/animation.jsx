@@ -19,6 +19,14 @@ const SinglyLinkedListVisualizer = () => {
   const animationRef = useRef(null);
   const isMounted = useRef(true);
 
+  const steps = [0, 1, 2, 3];
+  const explanations = [
+    'Creating a new node in memory.',
+    'Storing the input value in the node.',
+    'Linking the previous node to the new node.',
+    'Node added successfully.'
+  ];
+
   // Generate random memory addresses for visualization
   const generateMemoryAddress = () => {
     return '0x' + Math.floor(Math.random() * 0xFFFF).toString(16).padStart(4, '0');
