@@ -77,7 +77,15 @@ const LinearSearch = () => {
     }
 
     const elements = rawElements.map((el) => parseInt(el));
-    const targetValue = parseInt(target);
+
+    // FIX: also check target for decimal input
+    if (target.includes(".")) {
+    setMessage("Only integers are supported. Please remove decimal values.");
+    setMessageType("warning");
+    return;
+    }
+
+const targetValue = parseInt(target);
 
     if (elements.some(isNaN) || isNaN(targetValue)) {
       setMessage("Invalid array elements or target.");
