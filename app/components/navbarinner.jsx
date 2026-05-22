@@ -83,7 +83,8 @@ export default function Navbar() {
               <Link
                 key={l.href}
                 href={l.href}
-                className={`text-[15px] font-medium transition-colors duration-150 ${
+                aria-current={isActive(l.href) ? "page" : undefined}
+                className={`text-[15px] font-medium transition-colors duration-150 focus-ring ${
                   isActive(l.href)
                     ? "text-primary dark:text-primary font-semibold"
                     : "text-[#4b5563] dark:text-[#a3a3a3] hover:text-[#1a1a1a] dark:hover:text-white"
@@ -205,7 +206,8 @@ export default function Navbar() {
                 key={l.href}
                 href={l.href}
                 onClick={() => setMenuOpen(false)}
-                className={`block px-6 py-3.5 text-[16px] font-medium transition-colors ${
+                aria-current={isActive(l.href) ? "page" : undefined}
+                className={`block px-6 py-3.5 text-[16px] font-medium transition-colors focus-ring ${
                   isActive(l.href)
                     ? "text-[#a435f0] bg-[#faf5ff] dark:bg-[#1a0a2e]"
                     : "text-[#374151] dark:text-[#a3a3a3] hover:bg-[#f9fafb] dark:hover:bg-[#1a1a1a] hover:text-[#1a1a1a] dark:hover:text-white"
