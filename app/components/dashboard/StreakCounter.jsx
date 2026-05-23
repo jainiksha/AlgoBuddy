@@ -21,6 +21,7 @@ function StreakCounter({ activityDates }) {
 
     let streakCount = 0;
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     for (let i = dates.length - 1; i >= 0; i--) {
       const diff = (today - dates[i]) / (1000 * 60 * 60 * 24);
       if (diff === 0 || diff === 1) {
