@@ -10,6 +10,8 @@ TURNSTILE_SECRET_KEY=Your Cloudfare backend route api key
 SUPABASE_SERVICE_KEY=Your supabase service key
 REVIEW_INBOX_EMAIL=Optional: fixed inbox for review emails (defaults to EMAIL_USER)
 
+# AI Chatbot (AlgoBuddy Assistant)
+OPENAI_API_KEY=Your OpenAI or OpenRouter API Key
 # Upstash Redis — required in production to enforce rate limits across all
 # serverless instances. Create a free database at https://console.upstash.com
 # and copy the REST URL and token from the database dashboard.
