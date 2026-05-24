@@ -35,12 +35,20 @@ if (numbers[1] < numbers[minIndex]) {
 }
 swap(numbers[0], numbers[minIndex]);
 cout << numbers[0] << " " << numbers[1];`,
+  Java: `int[] numbers = {5, 2, 8, 1};
+int minIndex = 0;
+if (numbers[1] < numbers[minIndex]) {
+  minIndex = 1;
+}
+swap(numbers, 0, minIndex);
+System.out.println(numbers);`,
 };
 
 const LANGUAGE_HINTS = {
   JavaScript: "Traces assignments, arrays, if branches, swap calls, and console.log output.",
   Python: "Traces lists, assignments, if branches, swap calls, and print output.",
   "C++": "Traces vector declarations, scalar assignments, if branches, swap calls, and cout output.",
+  Java: "Traces array declarations, assignments, if branches, swap calls, and System.out.println output.",
 };
 
 function cloneVariables(variables) {
@@ -56,7 +64,9 @@ function stripLine(line) {
   return line
     .replace(/\/\/.*$/, "")
     .replace(/#.*$/, "")
-    .replace(/[;{}]/g, "")
+    .replace(/;/g, "")
+    .replace(/\s*\{\s*$/g, "")
+    .replace(/^\s*\}\s*$/g, "")
     .trim();
 }
 
@@ -137,6 +147,8 @@ function interpolateOutput(raw, variables) {
   const callBody = raw
     .replace(/^console\.log\(/, "")
     .replace(/^print\(/, "")
+    .replace(/^System\.out\.println\(/, "")
+    .replace(/^System\.out\.print\(/, "")
     .replace(/\)$/, "")
     .replace(/^cout\s*<</, "")
     .trim();
@@ -185,11 +197,11 @@ function buildTrace(source) {
 
     let note = "Read this statement.";
 
-    const vectorMatch = line.match(/^(?:const|let|var|int|auto|vector<[^>]+>)?\s*([A-Za-z_]\w*)\s*=\s*(.+)$/);
+    const vectorMatch = line.match(/^(?:const|let|var|int(?:\[\])?|auto|vector<[^>]+>)?\s*([A-Za-z_]\w*)\s*=\s*(.+)$/);
     const ifMatch = line.match(/^if\s*\(?(.+?)\)?\s*:?\s*$/);
     const forMatch = line.match(/^for\s*\(?(.+?)\)?\s*:?\s*$/);
     const swapMatch = line.match(/^swap\((.+)\)$/);
-    const outputMatch = /^(console\.log|print)\(/.test(line) || /^cout\s*<</.test(line);
+    const outputMatch = /^(console\.log|print|System\.out\.println|System\.out\.print)\(/.test(line) || /^cout\s*<</.test(line);
 
     if (forMatch) {
       callStack.push("loop");
