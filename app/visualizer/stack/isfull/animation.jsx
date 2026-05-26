@@ -77,7 +77,7 @@ const StackVisualizer = () => {
 
         {message && (
           <div className="max-w-4xl mx-auto mb-8 p-6 rounded-xl bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800/50 text-blue-800 dark:text-blue-200">
-            <p className="text-center font-medium text-lg italic">"{message}"</p>
+            <p className="text-center font-medium text-lg italic">&quot;{message}&quot;</p>
           </div>
         )}
 
