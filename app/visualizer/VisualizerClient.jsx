@@ -633,26 +633,29 @@ export default function VisualizerClient({ initialSections }) {
       
       {/* ═══════ CONTENT AREA ═══════ */}
       <section
-        className="px-5 pt-28 pb-20 min-h-screen bg-gradient-to-b from-white via-surface-50 to-purple-50/40 dark:bg-none dark:bg-[#1c1d1f] transition-colors duration-300"
+        className="px-5 pt-0 pb-20 min-h-screen bg-gradient-to-b from-white via-surface-50 to-purple-50/40 dark:bg-none dark:bg-[#1c1d1f] transition-colors duration-300"
       >
         <div className="max-w-[1100px] mx-auto">
           {/* page heading + search */}
-          <div className="text-center mb-14">
-            <h1 className="text-[2.6rem] sm:text-[3.4rem] lg:text-[4rem] font-black leading-[1.08] tracking-tighter text-surface-900 dark:text-white mb-4 transition-colors">
-              Algorithm <span className="text-primary">Visualizer</span>
-            </h1>
-            <p className="text-[1.1rem] text-surface-600 dark:text-surface-400 leading-relaxed max-w-[480px] mx-auto transition-colors">
-              Pick any data structure, tap an algorithm, and watch it run step
-              by step. Learning DSA has never been this fun.
-            </p>
+          {!activeSection && !search.trim() && (
+            <div className="text-center mb-14">
+              <h1 className="text-[2.6rem] sm:text-[3.4rem] lg:text-[4rem] font-black leading-[1.08] tracking-tighter text-surface-900 dark:text-white mb-4 transition-colors">
+                Algorithm <span className="text-primary">Visualizer</span>
+              </h1>
+              <p className="text-[1.1rem] text-surface-600 dark:text-surface-400 leading-relaxed max-w-[480px] mx-auto transition-colors">
+                Pick any data structure, tap an algorithm, and watch it run step
+                by step. Learning DSA has never been this fun.
+              </p>
+            </div>
+          )}
 
-            {/* Search Bar */}
-            <div className="relative max-w-[480px] mx-auto mt-8">
-              <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#9ca3af]" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+          {/* Search Bar */}
+          <div className="relative max-w-[480px] mx-auto mt-8 mb-14">
+            <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#9ca3af]" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search algorithms and topics..."
                 className="w-full h-[52px] pl-12 pr-4 rounded-2xl border border-[#e5e7eb] dark:border-[#333] bg-white dark:bg-[#1a1a1a] text-[#1a1a1a] dark:text-white placeholder-[#9ca3af] text-[15px] shadow-sm focus:outline-none focus:border-[#a435f0] focus:ring-2 focus:ring-[#a435f0]/20 transition-all"
               />
@@ -665,7 +668,6 @@ export default function VisualizerClient({ initialSections }) {
                 </button>
               )}
             </div>
-          </div>
 
           <AnimatePresence mode="wait">
             {search.trim() ? (
