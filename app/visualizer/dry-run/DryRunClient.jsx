@@ -17,8 +17,6 @@ import Editor from "@monaco-editor/react";
 import { useTheme } from "next-themes";
 import { useUser } from "@/app/contexts/UserContext";
 import { useCollaboration } from "@/app/components/ui/useCollaboration";
-import { useTheme } from "next-themes";
-import Editor from "@monaco-editor/react";
 
 const SAMPLES = {
   JavaScript: `const numbers = [5, 2, 8, 1];
@@ -355,10 +353,7 @@ export default function DryRunClient() {
   const { resolvedTheme } = useTheme();
   const isDarkMode = resolvedTheme === "dark";
   const { user } = useUser();
-  const { theme } = useTheme();
-  const isDarkMode = theme === "dark";
   const [language, setLanguage] = useState("JavaScript");
-  const monacoLanguage = language.toLowerCase();
   const [source, setSource] = useState(SAMPLES.JavaScript);
   const [step, setStep] = useState(0);
   const [playing, setPlaying] = useState(false);
