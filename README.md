@@ -105,6 +105,8 @@ Animated, step-by-step visualizations for a wide range of DSA topics:
 
 - Linear Search
 - Binary Search
+- Sorting Comparison Mode
+- Sliding Window Technique
 
 </td>
 <td>
