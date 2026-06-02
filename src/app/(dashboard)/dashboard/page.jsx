@@ -11,6 +11,7 @@ import Footer from "@/app/components/footer";
 import { trackActivity } from "@/lib/activity";
 import { useProblemBookmarks } from "@/app/hooks/useProblemBookmarks";
 import { practiceData } from "@/lib/practiceData";
+import { FiBookmark } from "react-icons/fi";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export default function Dashboard() {
   const [modules, setModules] = useState([]);
   const [progress, setProgress] = useState({});
   const [showAllCompleted, setShowAllCompleted] = useState(false);
-  const { bookmarks, loading: loadingBookmarks } = useProblemBookmarks();
+  const { bookmarks, loading: loadingBookmarks, toggleBookmark, isBookmarked } = useProblemBookmarks();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -226,9 +227,13 @@ export default function Dashboard() {
                           {problem.difficulty}
                         </span>
                         
-                        <span className="text-[10px] font-extrabold uppercase bg-purple-100 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded">
+                        <Link
+                          href={`/practice/${problem.topicSlug}`}
+                          className="text-[10px] font-extrabold uppercase bg-purple-100 dark:bg-purple-950/30 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded hover:bg-purple-200 dark:hover:bg-purple-900 transition"
+                          title={`Go to ${problem.topicTitle} practice`}
+                        >
                           {problem.topicTitle}
-                        </span>
+                        </Link>
                       </div>
 
                       <h3 className="text-md font-bold text-surface-800 dark:text-surface-200 mb-2 leading-snug">
@@ -240,11 +245,26 @@ export default function Dashboard() {
                       </p>
                     </div>
 
-                    <div className="mt-4 pt-3 border-t border-dashed border-surface-100 dark:border-neutral-800 flex justify-between items-center">
-                      <span className="text-[10px] text-surface-400 dark:text-neutral-500">
-                        Bookmarked: {new Date(bookmark.createdAt).toLocaleDateString()}
-                      </span>
-                      
+                    <div className="mt-4 pt-3 border-t border-dashed border-surface-100 dark:border-neutral-800 flex justify-between items-center gap-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
+                        <span className="text-[10px] text-surface-400 dark:text-neutral-500">
+                          Bookmarked: {new Date(bookmark.createdAt).toLocaleDateString()}
+                        </span>
+                        <button
+                          onClick={() => toggleBookmark(bookmark.id, problem.topicSlug)}
+                          className={`p-2 rounded-lg border transition hover:scale-105 active:scale-95 duration-200 ${mounted && isBookmarked(bookmark.id)
+                            ? "bg-amber-500/10 border-amber-500/30 text-amber-500 dark:bg-amber-950/20"
+                            : "bg-surface-50/20 border-surface-200/50 text-surface-400 hover:text-surface-600 dark:border-neutral-800 dark:text-neutral-500 dark:hover:text-neutral-300"
+                          }`}
+                          type="button"
+                          title={mounted && isBookmarked(bookmark.id) ? "Unbookmark problem" : "Bookmark problem"}
+                        >
+                          <FiBookmark
+                            size={16}
+                            className={mounted && isBookmarked(bookmark.id) ? "fill-amber-500 text-amber-500" : ""}
+                          />
+                        </button>
+                      </div>
                       <Link
                         href={`/practice/${problem.topicSlug}`}
                         className="text-xs text-primary font-bold hover:underline inline-flex items-center gap-1"
