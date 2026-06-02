@@ -7,6 +7,7 @@ import PlaybackControls from "@/app/components/ui/PlaybackControls";
 import usePlayback from "@/app/hooks/usePlayback";
 import useVisualizerKeyboard from "@/app/hooks/useVisualizerKeyboard";
 import useVisualizerReset from "@/app/hooks/useVisualizerReset";
+import { heapSortGenerator } from "@/features/algorithms/array/heapSortLogic";
 
 const DEFAULT_ARRAY = [42, 18, 76, 33, 9, 55, 64, 27];
 const MAX_ITEMS = 12;
@@ -65,168 +66,7 @@ const getNodePalette = (index, heapSize, activeIndices, compareIndices, swapIndi
   return { fill: "#ffffff", stroke: "#94a3b8", text: "#1f2937" };
 };
 
-const createHeapSortSteps = (values) => {
-  const arr = [...values];
-  const steps = [];
-  let comparisons = 0;
-  let swaps = 0;
-  const sorted = [];
-
-  const pushStep = ({
-    phase,
-    message,
-    activeIndices = [],
-    compareIndices = [],
-    swapIndices = [],
-    heapSize = arr.length,
-  }) => {
-    steps.push({
-      array: [...arr],
-      activeIndices,
-      compareIndices,
-      swapIndices,
-      sortedIndices: [...sorted],
-      heapSize,
-      phase,
-      message,
-      comparisons,
-      swaps,
-    });
-  };
-
-  const heapify = (heapSize, rootIndex, phase) => {
-    let largest = rootIndex;
-    const left = 2 * rootIndex + 1;
-    const right = 2 * rootIndex + 2;
-
-    pushStep({
-      phase,
-      message: `Heapify index ${rootIndex}; assume ${arr[rootIndex]} is largest.`,
-      activeIndices: [rootIndex],
-      heapSize,
-    });
-
-    if (left < heapSize) {
-      comparisons += 1;
-      pushStep({
-        phase,
-        message: `Compare parent ${arr[largest]} with left child ${arr[left]}.`,
-        activeIndices: [rootIndex],
-        compareIndices: [largest, left],
-        heapSize,
-      });
-      if (arr[left] > arr[largest]) {
-        largest = left;
-        pushStep({
-          phase,
-          message: `Left child ${arr[left]} becomes the largest candidate.`,
-          activeIndices: [largest],
-          heapSize,
-        });
-      }
-    }
-
-    if (right < heapSize) {
-      comparisons += 1;
-      pushStep({
-        phase,
-        message: `Compare current largest ${arr[largest]} with right child ${arr[right]}.`,
-        activeIndices: [rootIndex],
-        compareIndices: [largest, right],
-        heapSize,
-      });
-      if (arr[right] > arr[largest]) {
-        largest = right;
-        pushStep({
-          phase,
-          message: `Right child ${arr[right]} becomes the largest candidate.`,
-          activeIndices: [largest],
-          heapSize,
-        });
-      }
-    }
-
-    if (largest !== rootIndex) {
-      pushStep({
-        phase,
-        message: `Swap ${arr[rootIndex]} with ${arr[largest]} to restore the heap property.`,
-        swapIndices: [rootIndex, largest],
-        heapSize,
-      });
-      [arr[rootIndex], arr[largest]] = [arr[largest], arr[rootIndex]];
-      swaps += 1;
-      pushStep({
-        phase,
-        message: `Continue heapifying the affected subtree at index ${largest}.`,
-        activeIndices: [largest],
-        swapIndices: [rootIndex, largest],
-        heapSize,
-      });
-      heapify(heapSize, largest, phase);
-    } else {
-      pushStep({
-        phase,
-        message: `Subtree rooted at index ${rootIndex} already satisfies the max-heap rule.`,
-        activeIndices: [rootIndex],
-        heapSize,
-      });
-    }
-  };
-
-  pushStep({
-    phase: "Ready",
-    message: "Start by treating the array as a complete binary tree.",
-  });
-
-  pushStep({
-    phase: "Build Max-Heap",
-    message: "Build the max-heap from the last non-leaf node upward.",
-  });
-
-  for (let index = Math.floor(arr.length / 2) - 1; index >= 0; index--) {
-    pushStep({
-      phase: "Build Max-Heap",
-      message: `Heapify subtree rooted at index ${index}.`,
-      activeIndices: [index],
-    });
-    heapify(arr.length, index, "Build Max-Heap");
-  }
-
-  pushStep({
-    phase: "Extract Max",
-    message: "The max-heap is ready. Repeatedly move the root to the sorted region.",
-  });
-
-  for (let end = arr.length - 1; end > 0; end--) {
-    pushStep({
-      phase: "Extract Max",
-      message: `Swap max ${arr[0]} with the last heap value ${arr[end]}.`,
-      swapIndices: [0, end],
-      heapSize: end + 1,
-    });
-    [arr[0], arr[end]] = [arr[end], arr[0]];
-    swaps += 1;
-    sorted.push(end);
-    pushStep({
-      phase: "Extract Max",
-      message: `${arr[end]} is fixed at index ${end}; shrink the heap.`,
-      activeIndices: [end],
-      sortedIndices: [...sorted],
-      heapSize: end,
-    });
-    heapify(end, 0, "Heapify Reduced Heap");
-  }
-
-  sorted.push(0);
-  pushStep({
-    phase: "Complete",
-    message: "Heap Sort complete. Every value is in ascending order.",
-    sortedIndices: [...sorted],
-    heapSize: 0,
-  });
-
-  return steps;
-};
+// createHeapSortSteps replaced by heapSortGenerator
 
 export default function HeapSortVisualizer() {
   const [array, setArray] = useState(DEFAULT_ARRAY);
@@ -299,7 +139,7 @@ export default function HeapSortVisualizer() {
     if (!array.length) return;
 
     if (!steps.length || sorted) {
-      const nextSteps = createHeapSortSteps(array);
+      const nextSteps = Array.from(heapSortGenerator(array)).map(frame => frame.payload);
       setSteps(nextSteps);
       setCurrentStepIndex(0);
       setSorted(false);
