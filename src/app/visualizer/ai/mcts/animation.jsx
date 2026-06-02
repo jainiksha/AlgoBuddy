@@ -4,7 +4,6 @@ import { Play, Pause } from "lucide-react";
 import ResetButton from "@/app/components/ui/resetButton";
 import GoButton from "@/app/components/ui/goButton";
 import usePlayback from "@/app/hooks/usePlayback";
-import { useVisualizerSession } from "@/features/collaboration/VisualizerSessionContext";
 import useVisualizerReset from "@/app/hooks/useVisualizerReset";
 import { saveToStorage, loadFromStorage } from "@/utils/storage";
 
@@ -138,34 +137,6 @@ const MCTSAnim = () => {
     setMessageType("warning");
   };
 
-  const { registerCallbacks, unregisterCallbacks } = useVisualizerSession();
-
-  useEffect(() => {
-    registerCallbacks("mcts-visualizer", () => ({
-      tree,
-      isAnimating,
-      exploreC,
-      simSize,
-      highlightPath,
-      stepExplanation,
-      stepCount,
-      message,
-      messageType,
-      speed
-    }), (state) => {
-      setTree(state.tree);
-      setIsAnimating(state.isAnimating);
-      setExploreC(state.exploreC);
-      setSimSize(state.simSize);
-      setHighlightPath(state.highlightPath);
-      setStepExplanation(state.stepExplanation);
-      setStepCount(state.stepCount);
-      setMessage(state.message);
-      setMessageType(state.messageType);
-      setSpeed(state.speed);
-    });
-    return () => unregisterCallbacks("mcts-visualizer");
-  }, [tree, isAnimating, exploreC, simSize, highlightPath, stepExplanation, stepCount, message, messageType, speed, registerCallbacks, unregisterCallbacks, setSpeed]);
 
   const getPos = (index) => {
     let x = 0, y = 0;

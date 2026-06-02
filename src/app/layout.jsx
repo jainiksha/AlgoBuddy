@@ -2,7 +2,6 @@ import "./globals.css";
 import Script from "next/script";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { UserProvider } from "@/features/user/UserContext";
-import { VisualizerSessionProvider } from "@/features/collaboration/VisualizerSessionContext";
 import ClientLayoutWrapper from "@/app/components/ui/ClientLayoutWrapper";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
@@ -119,13 +118,11 @@ export default async function RootLayout({ children }) {
         >
           Skip to content
         </a>
-        <VisualizerSessionProvider>
-          <UserProvider>
-            <ClientLayoutWrapper>
-              <div id="main-content">{children}</div>
-            </ClientLayoutWrapper>
-          </UserProvider>
-        </VisualizerSessionProvider>
+        <UserProvider>
+          <ClientLayoutWrapper>
+            <div id="main-content">{children}</div>
+          </ClientLayoutWrapper>
+        </UserProvider>
         <SpeedInsights />
       </body>
     </html>
