@@ -11,6 +11,7 @@ import ChallengeModePanel, {
   createOptions,
   useSortingChallenge,
 } from "@/app/visualizer/array/components/ChallengeMode";
+import { insertionSortGenerator } from "@/features/algorithms/array/insertionSortLogic";
 
 const getFontSize = (value) => {
   const len = String(value).length;
@@ -108,81 +109,89 @@ const InsertionSortVisualizer = () => {
     isSortingRef.current = true;
     resolveRef.current = null;
     setSorting(true);
-    let arr = [...array];
-    const n = arr.length;
-    setTotalSteps(Math.floor((n * (n - 1)) / 2));
-    setCurrentStep(0);
 
     // reset bar positions
     barRefs.current.forEach((bar) => bar && gsap.set(bar, { x: 0, y: 0 }));
 
-    setCurrentIndices({ current: 1, comparing: 0, sortedUpTo: 0 });
+    const generator = insertionSortGenerator(array);
+    let previousCurrentIndices = { current: 1, comparing: 0, sortedUpTo: 0 };
+    setCurrentIndices(previousCurrentIndices);
     await cancellableDelay();
     if (!isSortingRef.current) return;
 
-    for (let i = 1; i < n; i++) {
-      let current = arr[i];
-      let j = i - 1;
-      setCurrentPhase(`Pass ${i} of ${n - 1}`);
-      setStepExplanation(`Inserting ${current} from index ${i} into the sorted portion on the left.`);
-      setCurrentIndices({ current: i, comparing: j, sortedUpTo: i - 1 });
-      await askChallenge(createInsertionKeyQuestion(arr, i));
+    for (const frame of generator) {
       if (!isSortingRef.current) return;
-      await cancellableDelay();
-      if (!isSortingRef.current) return;
+      const { type, payload } = frame;
 
-      while (j >= 0 && arr[j] > current) {
-        setStepExplanation(`Comparing ${current} with ${arr[j]} at index ${j}.`);
-        setComparisons((c) => c + 1);
-        setCurrentStep((prev) => prev + 1);
-        arr[j + 1] = arr[j];
-        setShifts((s) => s + 1);
-        setArray([...arr]);
+      if (type === 'init') {
+        setTotalSteps(payload.totalSteps);
+        setCurrentStep(0);
+      }
+      else if (type === 'phase_start') {
+        setCurrentPhase(`Pass ${payload.pass} of ${payload.totalPasses}`);
+        setStepExplanation(`Inserting ${payload.current} from index ${payload.i} into the sorted portion on the left.`);
+        previousCurrentIndices = { current: payload.i, comparing: payload.j, sortedUpTo: payload.i - 1 };
+        setCurrentIndices(previousCurrentIndices);
+
+        await askChallenge(createInsertionKeyQuestion(payload.arr, payload.i));
+        if (!isSortingRef.current) return;
+        await cancellableDelay();
+      }
+      else if (type === 'comparing') {
+        setStepExplanation(`Comparing ${payload.current} with ${payload.arr[payload.j]} at index ${payload.j}.`);
+        setComparisons(payload.comparisons);
+        setCurrentStep(payload.step);
+      }
+      else if (type === 'shifting') {
+        setShifts(payload.shifts);
+        setArray(payload.arr);
+        
         // animate shift
-        const movingBar = barRefs.current[j + 1];
+        const movingBar = barRefs.current[payload.j + 1];
         if (movingBar) {
           await gsap.to(movingBar, { y: -20, duration: 0.2 });
           await gsap.to(movingBar, { x: "+=70", duration: 0.3, ease: "power2.inOut" });
           await gsap.to(movingBar, { y: 0, duration: 0.2 });
           gsap.set(movingBar, { clearProps: "transform" });
         }
-        setStepExplanation(`Since ${arr[j]} > ${current}, moving ${arr[j]} one position ahead.`);
+        
+        setStepExplanation(`Since ${payload.arr[payload.j+1]} > ${payload.current}, moving ${payload.arr[payload.j+1]} one position ahead.`);
         await cancellableDelay();
         if (!isSortingRef.current) return;
-        j--;
-        setCurrentIndices({ current: i, comparing: j, sortedUpTo: i - 1 });
+        
+        previousCurrentIndices = { current: payload.i, comparing: payload.j - 1, sortedUpTo: payload.i - 1 };
+        setCurrentIndices(previousCurrentIndices);
       }
-
-      if (j >= 0) {
-        setStepExplanation(`Found insertion point for ${current} at index ${j + 1}.`);
-      } else {
-        setStepExplanation(`Reached the beginning of the sorted portion. Inserting ${current} at index ${j + 1}.`);
+      else if (type === 'found_insertion_point') {
+        if (payload.j >= 0) {
+          setStepExplanation(`Found insertion point for ${payload.current} at index ${payload.j + 1}.`);
+        } else {
+          setStepExplanation(`Reached the beginning of the sorted portion. Inserting ${payload.current} at index ${payload.j + 1}.`);
+        }
+        await cancellableDelay();
       }
-      await cancellableDelay();
-      if (!isSortingRef.current) return;
-
-      // place the current element
-      arr[j + 1] = current;
-      setArray([...arr]);
-      const insertBar = barRefs.current[i];
-      if (insertBar) {
-        const moveX = (j + 1 - i) * 70;
-        await gsap.to(insertBar, { y: -20, duration: 0.2 });
-        await gsap.to(insertBar, { x: moveX, duration: 0.3, ease: "power2.inOut" });
-        await gsap.to(insertBar, { y: 0, duration: 0.2 });
-        gsap.set(insertBar, { clearProps: "transform" });
+      else if (type === 'inserted') {
+        setArray(payload.arr);
+        const insertBar = barRefs.current[payload.i];
+        if (insertBar) {
+          const moveX = (payload.j + 1 - payload.i) * 70;
+          await gsap.to(insertBar, { y: -20, duration: 0.2 });
+          await gsap.to(insertBar, { x: moveX, duration: 0.3, ease: "power2.inOut" });
+          await gsap.to(insertBar, { y: 0, duration: 0.2 });
+          gsap.set(insertBar, { clearProps: "transform" });
+        }
+        setStepExplanation(`Placed ${payload.current} into the sorted portion at index ${payload.j + 1}.`);
+        await cancellableDelay();
       }
-      setStepExplanation(`Placed ${current} into the sorted portion at index ${j + 1}.`);
-      await cancellableDelay();
-      if (!isSortingRef.current) return;
+      else if (type === 'completed') {
+        setSorting(false);
+        setSorted(true);
+        isSortingRef.current = false;
+        setCurrentPhase("Completed");
+        setStepExplanation("Array is fully sorted.");
+        setCurrentIndices({ current: -1, comparing: -1, sortedUpTo: payload.arr.length - 1 });
+      }
     }
-
-    setSorting(false);
-    setSorted(true);
-    isSortingRef.current = false;
-    setCurrentPhase("Completed");
-    setStepExplanation("Array is fully sorted.");
-    setCurrentIndices({ current: -1, comparing: -1, sortedUpTo: n - 1 });
   };
 
   const reset = () => {
