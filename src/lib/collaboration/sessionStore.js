@@ -670,6 +670,13 @@ export async function listCollaborationSessions({ limit, cursor } = {}) {
   const maxScore = parsed.score;
 
   if (redis) {
+    // Active garbage collection (5% chance): drops expired session IDs 
+    // from the index to prevent unbounded memory leaks for unlisted/private sessions.
+    if (Math.random() < 0.05) {
+      const cutoffMs = Date.now() - SESSION_TTL_MS;
+      await redis.zremrangebyscore(SESSION_INDEX_KEY, "-inf", cutoffMs);
+    }
+
     const sessions = [];
     const expiredIds = [];
     let offset = 0;
