@@ -6,7 +6,7 @@ import useVisualizerKeyboard from "@/app/hooks/useVisualizerKeyboard";
 import PlaybackControls from "@/app/components/ui/PlaybackControls";
 import Breadcrumbs from "@/app/components/ui/Breadcrumbs";
 import { createVisualizerPaths } from "@/app/visualizer/components/VisualizerPageLayout";
-import { generateMorrisSteps } from "@/features/algorithms/tree/morrisLogic";
+import { generatePreOrderSteps } from "@/features/algorithms/tree/preOrderLogic";
 
 class TreeNode {
   constructor(value) {

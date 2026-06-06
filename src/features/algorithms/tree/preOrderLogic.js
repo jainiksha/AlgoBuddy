@@ -1,10 +1,8 @@
 /**
- * Pure function to generate step-by-step frames for Tree Pre-Order Traversal.
+ * Pure function to generate step-by-step frames for Pre-Order Traversal.
  * Decoupled from React UI.
  */
 export function generatePreOrderSteps(treeRoot) {
-  if (!treeRoot) return [];
-
   const records = [];
   const visited = [];
   const stack = [];
@@ -76,6 +74,8 @@ export function generatePreOrderSteps(treeRoot) {
       });
     }
   };
+
+  if (!treeRoot) return records;
 
   records.push({
     currentNode: treeRoot.value,
