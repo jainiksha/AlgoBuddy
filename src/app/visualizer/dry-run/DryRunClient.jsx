@@ -423,7 +423,7 @@ export default function DryRunClient() {
     if (typeof delta.speed === "number") {
       setSpeed(delta.speed);
     }
-  }, [source, language, step, playing, speed, followPresenter]);
+  }
 
   const collaboration = useGlobalCollaboration();
   const { session: collabSession, presenterId: collabPresenterId, clientId: collabClientId, registerHandler, unregisterHandler } = collaboration;
