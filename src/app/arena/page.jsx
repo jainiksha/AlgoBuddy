@@ -7,6 +7,7 @@ import UpcomingTournament from "@/app/components/ui/UpcomingTournament";
 import MatchmakingModal from "@/app/components/ui/MatchmakingModal";
 import DuelSimulatorModal from "@/app/components/ui/DuelSimulatorModal";
 import CreateDuelModal from "@/app/components/ui/CreateDuelModal";
+import BackToTop from "@/app/components/ui/backtotop";
 import Footer from "@/app/components/footer";
 import {
   Home,
@@ -664,6 +665,7 @@ export default function ArenaPage() {
       </div>
 
       <Footer />
+       <BackToTop />
 
       {/* ─── Interactive Modals ────────────────────────────────────────────── */}
       <MatchmakingModal
