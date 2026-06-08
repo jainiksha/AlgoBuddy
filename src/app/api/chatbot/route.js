@@ -12,6 +12,10 @@
  */
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getAuthenticatedUser } from "@/lib/auth";
+import { checkRateLimit } from "@/lib/rateLimit";
+import { getClientIp } from "@/lib/getClientIp";
+import { jsonResponse } from "@/lib/serverApi";
 
 // ─── System Prompt ─────────────────────────────────────────────────────────────
 const SYSTEM_PROMPT = `You are **AlgoBot** 🤖 — the official AI assistant embedded inside **AlgoBuddy** (https://www.algobuddy.me), a free, open-source, interactive platform built to help students and developers master Data Structures & Algorithms (DSA) through visualizations, practice, and progress tracking.
@@ -203,36 +207,65 @@ function validateMessages(messages) {
 
 // ─── Convert message history to Gemini contents schema ────────────────────────
 function toGeminiContents(messages) {
-  return messages.map((msg) => ({
-    role: msg.role === "assistant" ? "model" : "user",
-    parts: [{ text: msg.content }],
-  }));
+  const contents = [];
+  for (const msg of messages) {
+    const role = msg.role === "assistant" ? "model" : "user";
+    // Gemini API strictly requires alternating user/model roles. 
+    // If we encounter consecutive messages from the same role, we merge them.
+    if (contents.length > 0 && contents[contents.length - 1].role === role) {
+      contents[contents.length - 1].parts[0].text += "\n\n" + msg.content;
+    } else {
+      contents.push({
+        role,
+        parts: [{ text: msg.content }],
+      });
+    }
+  }
+  return contents;
 }
 
 // ─── POST Handler ─────────────────────────────────────────────────────────────
 export async function POST(request) {
+  const authResult = await getAuthenticatedUser();
+
+  if (!authResult.success) {
+    if (authResult.type === "CONFIG_ERROR" || authResult.type === "AUTH_PROVIDER_ERROR") {
+      return jsonResponse({ error: "Authentication service unavailable" }, 500);
+    }
+    return jsonResponse({ error: "Authentication required" }, 401);
+  }
+
+  const ip = getClientIp(request.headers);
+  const { allowed, resetAt } = await checkRateLimit(`chatbot:${ip}`);
+  if (!allowed) {
+    const retryAfter = Math.ceil((resetAt - Date.now()) / 1000);
+    return jsonResponse({ error: "Too many requests. Please try again later." }, 429, {
+      "Retry-After": retryAfter.toString(),
+    });
+  }
+
   let body;
   try {
     body = await request.json();
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON body." }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error: "Invalid JSON body." }, 400);
   }
 
   const { messages } = body;
   const { valid, error } = validateMessages(messages);
 
   if (!valid) {
-    return new Response(JSON.stringify({ error }), {
-      status: 422,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error }, 422);
   }
 
   // Clamp to last 20 turns to manage token budget
   const clampedMessages = messages.slice(-20);
+
+  // Gemini API strictly requires conversation history to begin with a 'user' message.
+  // If slicing the array left an 'assistant' message at index 0, we must drop it.
+  if (clampedMessages.length > 0 && clampedMessages[0].role === "assistant") {
+    clampedMessages.shift();
+  }
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({

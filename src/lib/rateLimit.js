@@ -13,19 +13,28 @@ const memoryBuckets = new Map();
 
 function checkMemory(key) {
   const now = Date.now();
+  
+  // --- Memory Leak Fix: Probabilistic Garbage Collection ---
+  // Run GC on ~5% of requests to prune expired keys from the Map.
+  if (Math.random() < 0.05) {
+    for (const [k, b] of memoryBuckets.entries()) {
+      if (b.resetAt <= now) {
+        memoryBuckets.delete(k);
+      }
+    }
+  }
+
   const bucket = memoryBuckets.get(key);
   if (!bucket || bucket.resetAt <= now) {
-    memoryBuckets.set(key, {
-      count: 1,
-      resetAt: now + WINDOW_SECONDS * 1_000,
-    });
-    return { allowed: true, remaining: MAX_REQUESTS - 1 };
+    const resetAt = now + WINDOW_SECONDS * 1_000;
+    memoryBuckets.set(key, { count: 1, resetAt });
+    return { allowed: true, remaining: MAX_REQUESTS - 1, resetAt };
   }
   if (bucket.count >= MAX_REQUESTS) {
-    return { allowed: false, remaining: 0 };
+    return { allowed: false, remaining: 0, resetAt: bucket.resetAt };
   }
   bucket.count += 1;
-  return { allowed: true, remaining: MAX_REQUESTS - bucket.count };
+  return { allowed: true, remaining: MAX_REQUESTS - bucket.count, resetAt: bucket.resetAt };
 }
 
 // ---------------------------------------------------------------------------
@@ -73,4 +82,46 @@ return {
   remaining: remaining ?? 0,
   resetAt: reset ?? Date.now() + WINDOW_SECONDS * 1000,
 };
+}
+
+// ---------------------------------------------------------------------------
+// SMTP Quota Protection
+// ---------------------------------------------------------------------------
+let localSmtpCounter = 0;
+let localSmtpDate = new Date().toISOString().split("T")[0];
+
+/**
+ * Enforces a global daily quota for outbound SMTP emails to prevent
+ * third-party provider exhaustion (e.g. Gmail banning the account).
+ * 
+ * @param {number} maxPerDay - The maximum number of emails allowed per day.
+ */
+export async function checkGlobalSmtpQuota(maxPerDay = 500) {
+  const today = new Date().toISOString().split("T")[0];
+
+  // In-memory fallback for local dev
+  if (!ratelimit) {
+    if (localSmtpDate !== today) {
+      localSmtpCounter = 0;
+      localSmtpDate = today;
+    }
+    localSmtpCounter += 1;
+    return { 
+      allowed: localSmtpCounter <= maxPerDay, 
+      remaining: Math.max(0, maxPerDay - localSmtpCounter) 
+    };
+  }
+
+  // Global Redis implementation
+  const redis = Redis.fromEnv();
+  const dailyKey = `smtp:quota:${today}`;
+  const count = await redis.incr(dailyKey);
+  if (count === 1) {
+    await redis.expire(dailyKey, 86400); // Expire after 24 hours
+  }
+  
+  return { 
+    allowed: count <= maxPerDay, 
+    remaining: Math.max(0, maxPerDay - count) 
+  };
 }

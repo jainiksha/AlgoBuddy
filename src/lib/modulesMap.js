@@ -43,6 +43,7 @@ export const MODULE_MAPS = {
     isomorphism: "2cd12990-6c50-4842-b36e-f42e8b516387",
     serialization: "d4764df9-355c-4a5c-b9ff-e6f71a667397",
     recursionFactorial: "b31cd781-881e-4060-a6a3-c5d58e36dffe",
+    recursionHanoi: "b31cd781-881e-4060-a6a3-c5d58e36dff7",
     recursionSum: "b31cd781-881e-4060-a6a3-c5d58e36dffb",
     recursionFibonacci: "b31cd781-881e-4060-a6a3-c5d58e36dffa",
     recursionPrint1ToN: "b31cd781-881e-4060-a6a3-c5d58e36dff1",

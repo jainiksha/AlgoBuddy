@@ -71,6 +71,7 @@ export const sections = [
           { name: "Recursion Trees", path: "/visualizer/recursion/trees" },
           { name: "Call Stack Visualization", path: "/visualizer/recursion/stack" },
           { name: "Recursive Binary Search", path: "/visualizer/recursion/binary-search" },
+          { name: "Tower of Hanoi", path: "/visualizer/recursion/tower-of-hanoi" },
         ],
       },
     ],
