@@ -1,5 +1,6 @@
 package com.algobuddy.backend.service;
 
+import com.algobuddy.backend.dto.BulkProgressRequest;
 import com.algobuddy.backend.dto.ProgressRequest;
 import com.algobuddy.backend.dto.ProgressResponse;
 import com.algobuddy.backend.entity.UserPracticeStats;
@@ -11,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -97,6 +97,46 @@ public class PracticeService {
             updateStreak(userId);
         }
         
+        return getUserProgress(userId);
+    }
+
+    @Transactional
+    public ProgressResponse bulkUpdateProgress(UUID userId, BulkProgressRequest request) {
+        if (request.getItems() == null || request.getItems().isEmpty()) {
+            return getUserProgress(userId);
+        }
+
+        boolean anyCompleted = false;
+        OffsetDateTime now = OffsetDateTime.now();
+
+        for (BulkProgressRequest.Item item : request.getItems()) {
+            if (item.getProblemId() == null || item.getStatus() == null) continue;
+
+            Optional<UserProgress> existing = progressRepository.findByUserIdAndProblemId(userId, item.getProblemId());
+            if (existing.isPresent()) {
+                UserProgress progress = existing.get();
+                progress.setStatus(item.getStatus());
+                progress.setUpdatedAt(now);
+                progressRepository.save(progress);
+            } else {
+                UserProgress newProgress = new UserProgress();
+                newProgress.setUserId(userId);
+                newProgress.setProblemId(item.getProblemId());
+                newProgress.setStatus(item.getStatus());
+                newProgress.setUpdatedAt(now);
+                progressRepository.save(newProgress);
+            }
+
+            if ("Completed".equals(item.getStatus())) {
+                anyCompleted = true;
+            }
+        }
+
+        // Only update streak once even if multiple problems were completed
+        if (anyCompleted) {
+            updateStreak(userId);
+        }
+
         return getUserProgress(userId);
     }
 

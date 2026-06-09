@@ -6,7 +6,6 @@ import { toast } from "react-hot-toast";
 import { 
   Search, 
   ChevronDown, 
-  SlidersHorizontal,
   Shuffle, 
   Bookmark, 
   CheckCircle2, 
@@ -14,7 +13,8 @@ import {
   ChevronRight,
   ExternalLink,
   BookOpen,
-  Play
+  Play,
+  ScrollText
 } from "lucide-react";
 
 import PracticeSidebar from "@/app/components/practice/PracticeSidebar";
@@ -22,13 +22,13 @@ import PracticeRightSidebar from "@/app/components/practice/PracticeRightSidebar
 import PracticeSessionBanner from "@/app/components/practice/PracticeSessionBanner";
 import CompanyLogos from "@/app/components/practice/CompanyLogos";
 import TheoryDrawer from "@/app/components/practice/TheoryDrawer";
-import Footer from "@/app/components/footer";
 import BackToTop from "@/app/components/ui/backtotop";
 
 import { practiceData } from "@/lib/practiceData";
 import { useUser } from "@/features/user/UserContext";
 import { useProblemBookmarks } from "@/app/hooks/useProblemBookmarks";
-import { supabase } from "@/lib/supabase";
+import { useSheetProgress } from "@/app/hooks/useSheetProgress";
+import { useMySheet } from "@/app/hooks/useMySheet";
 
 export default function PracticePage() {
   const { user } = useUser();
@@ -52,174 +52,28 @@ export default function PracticePage() {
   // Accordion Topic-wise state
   const [expandedTopics, setExpandedTopics] = useState({});
 
-  // Bookmarks & Progress Hooks
+  // Unified progress hook (replaces all inline progress/streak logic)
+  const { progress, getStatus, updateProgress, streakData, loading: progressLoading } = useSheetProgress();
+  const currentStreak = streakData.current;
+  const longestStreak = streakData.best;
+
+  // My Sheet hook
+  const { sheet, isInSheet, addToSheet, removeFromSheet, sheetCount } = useMySheet();
+
+  // Bookmarks hook
   const { bookmarks, isBookmarked, toggleBookmark } = useProblemBookmarks();
-  const [progress, setProgress] = useState({});
-  const [currentStreak, setCurrentStreak] = useState(0);
-  const [longestStreak, setLongestStreak] = useState(0);
   const [mounted, setMounted] = useState(false);
 
-  const getStatus = (problemId) => {
-    const entry = progress[problemId];
-    if (!entry) return "Not Started";
-    if (typeof entry === "object" && entry.status) return entry.status;
-    return entry;
-  };
+  // Authentication check & mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  const updateStreakLocally = () => {
-    const today = new Date().toDateString();
-    const lastActive = localStorage.getItem("algobuddy_last_active_date");
-
-    if (lastActive === today) {
-      return;
-    }
-
-    const yesterday = new Date(Date.now() - 86400000).toDateString();
-    let newStreak = 1;
-
-    if (lastActive === yesterday) {
-      newStreak = currentStreak + 1;
-    } else {
-      newStreak = 1;
-    }
-
-    setCurrentStreak(newStreak);
-    localStorage.setItem("algobuddy_current_streak", newStreak.toString());
-
-    if (newStreak > longestStreak) {
-      setLongestStreak(newStreak);
-      localStorage.setItem("algobuddy_best_streak", newStreak.toString());
-    }
-
-    localStorage.setItem("algobuddy_last_active_date", today);
-  };
-
-  // Authentication check
   useEffect(() => {
     if (mounted && !user) {
       router.replace("/login");
     }
   }, [user, router, mounted]);
-
-  // Load progress initially
-  useEffect(() => {
-    setMounted(true);
-    
-    const fetchProgress = async () => {
-      try {
-        const useSpringBoot = process.env.NEXT_PUBLIC_USE_SPRING_BOOT_API === "true";
-        if (useSpringBoot) {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.access_token) {
-            const baseUrl = process.env.NEXT_PUBLIC_SPRING_BOOT_API_URL || "http://localhost:8080";
-            const res = await fetch(`${baseUrl}/api/v1/practice/progress`, {
-              headers: { "Authorization": `Bearer ${session.access_token}` }
-            });
-            if (res.ok) {
-              const data = await res.json();
-              const serverProgress = data.progress || {};
-              
-              // Load local guest progress
-              const localSaved = localStorage.getItem("algobuddy_practice_progress");
-              const localProgress = localSaved ? JSON.parse(localSaved) : {};
-
-              // Merge local and server progress
-              const mergedProgress = {};
-              
-              // 1. Add local progress
-              Object.keys(localProgress).forEach((k) => {
-                const val = localProgress[k];
-                if (val) {
-                  mergedProgress[k] = typeof val === "object" && val !== null ? val : { status: val, updatedAt: new Date().toISOString() };
-                }
-              });
-
-              // 2. Overwrite/add server progress
-              Object.keys(serverProgress).forEach((k) => {
-                const val = serverProgress[k];
-                if (val) {
-                  mergedProgress[k] = typeof val === "object" && val !== null ? val : { status: val, updatedAt: new Date().toISOString() };
-                }
-              });
-
-              // 3. Find items solved locally that need to be synced to database
-              const toSyncList = [];
-              Object.keys(localProgress).forEach((k) => {
-                if (!serverProgress[k]) {
-                  const localVal = localProgress[k];
-                  const statusStr = typeof localVal === "object" && localVal !== null ? localVal.status : localVal;
-                  if (statusStr && statusStr !== "Not Started") {
-                    toSyncList.push({ problemId: k, status: statusStr });
-                  }
-                }
-              });
-
-              // Update state and localStorage
-              setProgress(mergedProgress);
-              localStorage.setItem("algobuddy_practice_progress", JSON.stringify(mergedProgress));
-              setCurrentStreak(data.currentStreak || 0);
-              setLongestStreak(data.longestStreak || 0);
-
-              // Synchronize local items to database
-              if (toSyncList.length > 0) {
-                const baseUrl = process.env.NEXT_PUBLIC_SPRING_BOOT_API_URL || "http://localhost:8080";
-                Promise.all(toSyncList.map(async (item) => {
-                  try {
-                    await fetch(`${baseUrl}/api/v1/practice/progress`, {
-                      method: "POST",
-                      headers: { 
-                        "Authorization": `Bearer ${session.access_token}`,
-                        "Content-Type": "application/json"
-                      },
-                      body: JSON.stringify({ problemId: item.problemId, status: item.status })
-                    });
-                  } catch (err) {
-                    console.error("Failed to sync progress item to database:", err);
-                  }
-                })).catch(console.error);
-              }
-              return;
-            }
-          }
-        }
-        
-        // Supabase direct stats fetch
-        if (user) {
-          const { data, error } = await supabase
-            .from("user_practice_stats")
-            .select("current_streak, longest_streak")
-            .eq("user_id", user.id)
-            .maybeSingle();
-          if (data) {
-            setCurrentStreak(data.current_streak || 0);
-            setLongestStreak(data.longest_streak || 0);
-          }
-        } else {
-          // LocalStorage fallback for Guest mode
-          const savedStreak = localStorage.getItem("algobuddy_current_streak");
-          const savedBest = localStorage.getItem("algobuddy_best_streak");
-          setCurrentStreak(savedStreak ? parseInt(savedStreak) : 0);
-          setLongestStreak(savedBest ? parseInt(savedBest) : 0);
-        }
-
-        // Fallback progress to localStorage
-        const saved = localStorage.getItem("algobuddy_practice_progress");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          const mappedProgress = {};
-          Object.keys(parsed).forEach((k) => {
-            const val = parsed[k];
-            mappedProgress[k] = typeof val === "object" ? val : { status: val, updatedAt: new Date().toISOString() };
-          });
-          setProgress(mappedProgress);
-        }
-      } catch (e) {
-        console.error("Failed to load practice progress:", e);
-      }
-    };
-
-    fetchProgress();
-  }, [user]);
 
   // Dynamically flatten all problems from practiceData (Zero Hardcoding!)
   const allProblems = useMemo(() => {
@@ -247,31 +101,11 @@ export default function PracticePage() {
     let mediumTotal = 0;
     let hardTotal = 0;
     const uniqueCompanies = new Set();
-    
-    let dailySolved = 0;
-    let weeklySolved = 0;
-    let monthlySolved = 0;
-    const now = new Date();
-    const oneDayMs = 24 * 60 * 60 * 1000;
-    const sevenDaysMs = 7 * oneDayMs;
-    const thirtyDaysMs = 30 * oneDayMs;
 
     allProblems.forEach((prob) => {
-      const val = progress[prob.id];
-      const status = typeof val === "string" ? val : (val?.status || "Not Started");
-      
-      if (status === "Completed") {
-        solved++;
-        if (val && typeof val === "object" && val.updatedAt) {
-          const updatedDate = new Date(val.updatedAt);
-          const diffMs = now - updatedDate;
-          if (diffMs <= oneDayMs) dailySolved++;
-          if (diffMs <= sevenDaysMs) weeklySolved++;
-          if (diffMs <= thirtyDaysMs) monthlySolved++;
-        }
-      } else if (status === "In Progress") {
-        attempted++;
-      }
+      const status = getStatus(prob.id);
+      if (status === "Completed") solved++;
+      else if (status === "In Progress") attempted++;
 
       if (prob.difficulty === "Easy") easyTotal++;
       else if (prob.difficulty === "Medium") mediumTotal++;
@@ -284,7 +118,6 @@ export default function PracticePage() {
 
     const remaining = allProblems.length - solved - attempted;
 
-    // Sum estimated time dynamically (Easy=20m, Medium=30m, Hard=45m)
     const totalMinutes = allProblems.reduce((acc, p) => {
       if (p.difficulty === "Easy") return acc + 20;
       if (p.difficulty === "Medium") return acc + 30;
@@ -296,9 +129,10 @@ export default function PracticePage() {
 
     return {
       solved,
-      dailySolved,
-      weeklySolved,
-      monthlySolved,
+      // Prefer server-computed time-window stats; fall back to 0
+      dailySolved: streakData.dailySolved || 0,
+      weeklySolved: streakData.weeklySolved || 0,
+      monthlySolved: streakData.monthlySolved || 0,
       attempted,
       remaining,
       total: allProblems.length,
@@ -308,7 +142,7 @@ export default function PracticePage() {
       hardTotal,
       companiesCount: uniqueCompanies.size
     };
-  }, [allProblems, progress]);
+  }, [allProblems, progress, getStatus, streakData]);
 
   // Compute dynamic list of company badges and problem counts for the company-wise view
   const companiesList = useMemo(() => {
@@ -334,42 +168,15 @@ export default function PracticePage() {
       nextStatus = "Completed";
     }
 
-    const updated = { 
-      ...progress, 
-      [problemId]: { status: nextStatus, updatedAt: new Date().toISOString() } 
-    };
-    setProgress(updated);
-    localStorage.setItem("algobuddy_practice_progress", JSON.stringify(updated));
+    // Delegate to the unified hook (handles local + server sync + streak)
+    await updateProgress(problemId, nextStatus);
 
-    // Toast updates and streak updates
     if (nextStatus === "Completed") {
       toast.success("Problem completed! Keep it up! 🏆");
-      updateStreakLocally();
     } else if (nextStatus === "In Progress") {
       toast.success("Problem marked as Attempted. ⏳");
     } else {
       toast.success("Problem status reset.");
-    }
-
-    // Sync to backend if springboot configured
-    try {
-      const useSpringBoot = process.env.NEXT_PUBLIC_USE_SPRING_BOOT_API === "true";
-      if (useSpringBoot) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          const baseUrl = process.env.NEXT_PUBLIC_SPRING_BOOT_API_URL || "http://localhost:8080";
-          await fetch(`${baseUrl}/api/v1/practice/progress`, {
-            method: "POST",
-            headers: { 
-              "Authorization": `Bearer ${session.access_token}`,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ problemId, status: nextStatus })
-          });
-        }
-      }
-    } catch (e) {
-      console.error("Failed to sync progress to server:", e);
     }
   };
 
@@ -511,6 +318,7 @@ export default function PracticePage() {
           monthlyGoal={50}
           streakDays={currentStreak}
           bestStreak={longestStreak}
+          mySheetCount={sheetCount}
           onBackToPractice={() => router.push("/")}
           onBackToSessions={() => setActiveView("problem-list")}
         />
@@ -519,7 +327,161 @@ export default function PracticePage() {
         <div className="flex-1 min-w-0 space-y-6">
           
           {/* Main dashboard rendering based on activeView */}
-          {activeView === "problem-list" || activeView === "bookmarks" || activeView === "recent-solved" ? (
+          {activeView === "my-sheet" ? (
+            /* ── MY SHEET VIEW ─────────────────────────────────────── */
+            <section className="space-y-5">
+              {/* Header */}
+              <div className="bg-gradient-to-br from-purple-600 to-violet-700 rounded-3xl p-6 md:p-8 text-white shadow-lg shadow-purple-500/20">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2.5 mb-2">
+                      <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                        <ScrollText size={16} />
+                      </div>
+                      <span className="text-xs font-black uppercase tracking-widest text-purple-200">Personal Practice List</span>
+                    </div>
+                    <h2 className="text-2xl font-black">My Sheet</h2>
+                    <p className="text-sm text-purple-200 mt-1">
+                      {sheetCount > 0
+                        ? `${sheetCount} problem${sheetCount !== 1 ? 's' : ''} curated · ${Object.values(sheet).filter((_,i) => getStatus(Object.keys(sheet)[i]) === 'Completed').length} solved`
+                        : 'Add problems from the Problem List using the ＋ button'}
+                    </p>
+                  </div>
+                  {sheetCount > 0 && (
+                    <div className="flex gap-3">
+                      {['Easy','Medium','Hard'].map(diff => {
+                        const c = Object.keys(sheet).filter(id => {
+                          const p = allProblems.find(x => x.id === id);
+                          return p?.difficulty === diff;
+                        }).length;
+                        return c > 0 ? (
+                          <div key={diff} className="text-center bg-white/15 rounded-2xl px-4 py-2">
+                            <div className="text-lg font-black">{c}</div>
+                            <div className={`text-[10px] font-black uppercase ${
+                              diff === 'Easy' ? 'text-emerald-300' : diff === 'Medium' ? 'text-amber-300' : 'text-red-300'
+                            }`}>{diff}</div>
+                          </div>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {sheetCount === 0 ? (
+                /* Empty state */
+                <div className="bg-white dark:bg-[#1a1b1e] border border-slate-100 dark:border-neutral-800/80 rounded-3xl p-12 text-center shadow-sm">
+                  <div className="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center mx-auto mb-4">
+                    <ScrollText size={28} className="text-purple-500" />
+                  </div>
+                  <h3 className="text-base font-black text-slate-800 dark:text-white mb-2">Your sheet is empty</h3>
+                  <p className="text-sm text-slate-400 dark:text-neutral-500 max-w-sm mx-auto mb-5">
+                    Go to the Problem List and click the <strong>＋</strong> button on any problem to add it to your personal sheet.
+                  </p>
+                  <button
+                    onClick={() => setActiveView('problem-list')}
+                    className="px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-bold transition hover:bg-primary-dark"
+                  >
+                    Browse Problems →
+                  </button>
+                </div>
+              ) : (
+                /* Sheet table */
+                <div className="bg-white dark:bg-[#1a1b1e] border border-slate-100 dark:border-neutral-800/80 rounded-3xl shadow-sm overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse min-w-[600px]">
+                      <thead>
+                        <tr className="bg-slate-50/40 dark:bg-neutral-900/10 text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-neutral-500 border-b border-slate-100 dark:border-neutral-800">
+                          <th className="py-4 px-5 w-10 text-center">#</th>
+                          <th className="py-4 px-5">Problem</th>
+                          <th className="py-4 px-5">Topic</th>
+                          <th className="py-4 px-5 text-center">Level</th>
+                          <th className="py-4 px-5 text-center">Company</th>
+                          <th className="py-4 px-5 text-center">Status</th>
+                          <th className="py-4 px-5 text-center">Actions</th>
+                          <th className="py-4 px-5 text-center">Remove</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.keys(sheet).map((problemId, idx) => {
+                          const prob = allProblems.find(p => p.id === problemId);
+                          if (!prob) return null;
+                          const status = getStatus(prob.id);
+                          return (
+                            <tr key={prob.id} className="border-b border-slate-50 dark:border-neutral-850/80 hover:bg-slate-50/20 dark:hover:bg-neutral-800/10 transition last:border-0">
+                              <td className="py-4 px-5 text-center font-bold text-xs text-slate-400">{idx + 1}</td>
+                              <td className="py-4 px-5">
+                                <div className="font-bold text-xs text-slate-800 dark:text-white">{prob.name}</div>
+                              </td>
+                              <td className="py-4 px-5 text-xs font-bold text-slate-500 dark:text-neutral-400">{prob.topic}</td>
+                              <td className="py-4 px-5 text-center">
+                                <span className={`inline-block text-[9px] font-black px-2.5 py-0.5 rounded-full ${
+                                  prob.difficulty === 'Easy' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                  : prob.difficulty === 'Medium' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                                  : 'bg-red-500/10 text-red-600 dark:text-red-400'
+                                }`}>{prob.difficulty}</span>
+                              </td>
+                              <td className="py-4 px-5 text-center">
+                                <div className="flex justify-center"><CompanyLogos companies={prob.companies} /></div>
+                              </td>
+                              <td className="py-4 px-5 text-center">
+                                <div className="flex justify-center">
+                                  <button
+                                    onClick={() => handleStatusToggle(prob.id, status)}
+                                    className="focus:outline-none"
+                                    title={`Status: ${status}`}
+                                  >
+                                    {status === 'Completed' ? (
+                                      <div className="w-5 h-5 rounded-full border border-emerald-500 bg-emerald-500 flex items-center justify-center text-white">
+                                        <CheckCircle2 size={12} className="stroke-[3]" />
+                                      </div>
+                                    ) : status === 'In Progress' ? (
+                                      <div className="w-5 h-5 rounded-full border-2 border-amber-500 flex items-center justify-center">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                                      </div>
+                                    ) : (
+                                      <div className="w-5 h-5 rounded-full border-2 border-slate-200 dark:border-neutral-700 hover:border-primary transition" />
+                                    )}
+                                  </button>
+                                </div>
+                              </td>
+                              <td className="py-4 px-5 text-center">
+                                <div className="flex items-center justify-center gap-2">
+                                  <button
+                                    onClick={() => { setSelectedProblem(prob); setIsDrawerOpen(true); }}
+                                    className="text-[10px] font-bold px-2 py-1 rounded-lg border border-slate-200 dark:border-neutral-700 text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800 transition"
+                                  >
+                                    Theory
+                                  </button>
+                                  <a
+                                    href={prob.practiceUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[10px] font-bold px-2 py-1 bg-primary text-white rounded-lg hover:bg-primary-dark transition"
+                                  >
+                                    Solve
+                                  </a>
+                                </div>
+                              </td>
+                              <td className="py-4 px-5 text-center">
+                                <button
+                                  onClick={() => { removeFromSheet(prob.id); toast.success('Removed from My Sheet'); }}
+                                  className="text-slate-300 dark:text-neutral-700 hover:text-red-500 dark:hover:text-red-400 transition p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20"
+                                  title="Remove from My Sheet"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </section>
+          ) : activeView === "problem-list" || activeView === "bookmarks" || activeView === "recent-solved" ? (
             <>
               {/* Session banner (rendered as the top UI header of Problem List) */}
               <PracticeSessionBanner 
@@ -617,6 +579,7 @@ export default function PracticePage() {
                           <th className="py-4 px-5 text-center">Company</th>
                           <th className="py-4 px-5 text-center">Status</th>
                           <th className="py-4 px-5 text-center w-12"></th>
+                          <th className="py-4 px-5 text-center w-12" title="Add to My Sheet">Sheet</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -698,6 +661,27 @@ export default function PracticePage() {
                                     }`}
                                   >
                                     <Bookmark size={14} className={isSaved ? "fill-primary dark:fill-purple-400" : ""} />
+                                  </button>
+                                </td>
+                                <td className="py-4 px-5 text-center">
+                                  <button
+                                    onClick={() => {
+                                      if (isInSheet(prob.id)) {
+                                        removeFromSheet(prob.id);
+                                        toast.success('Removed from My Sheet');
+                                      } else {
+                                        addToSheet(prob.id);
+                                        toast.success('Added to My Sheet! ✨');
+                                      }
+                                    }}
+                                    title={isInSheet(prob.id) ? 'Remove from My Sheet' : 'Add to My Sheet'}
+                                    className={`focus:outline-none p-1.5 rounded-lg transition ${
+                                      isInSheet(prob.id)
+                                        ? 'text-purple-500 bg-purple-500/10 dark:text-purple-400'
+                                        : 'text-slate-300 dark:text-neutral-700 hover:text-purple-500 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20'
+                                    }`}
+                                  >
+                                    <ScrollText size={14} />
                                   </button>
                                 </td>
                               </tr>

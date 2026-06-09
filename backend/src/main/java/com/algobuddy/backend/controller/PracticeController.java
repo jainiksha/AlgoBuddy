@@ -1,5 +1,6 @@
 package com.algobuddy.backend.controller;
 
+import com.algobuddy.backend.dto.BulkProgressRequest;
 import com.algobuddy.backend.dto.ProgressRequest;
 import com.algobuddy.backend.dto.ProgressResponse;
 import com.algobuddy.backend.service.PracticeService;
@@ -30,6 +31,14 @@ public class PracticeController {
                                                            @RequestBody ProgressRequest request) {
         UUID userId = UUID.fromString(jwt.getSubject());
         ProgressResponse response = practiceService.updateProgress(userId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/progress/bulk")
+    public ResponseEntity<ProgressResponse> bulkUpdateProgress(@AuthenticationPrincipal Jwt jwt,
+                                                               @RequestBody BulkProgressRequest request) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        ProgressResponse response = practiceService.bulkUpdateProgress(userId, request);
         return ResponseEntity.ok(response);
     }
 }

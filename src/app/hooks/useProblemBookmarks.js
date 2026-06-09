@@ -64,9 +64,9 @@ export function useProblemBookmarks() {
         try {
           const data = await apiFetch("/api/bookmarks");
           const dbBookmarks = (data || []).map((row) => ({
-            id: row.problem_id,
-            topicSlug: row.topic_slug,
-            createdAt: row.created_at,
+            id: row.problem_id || row.problemId,
+            topicSlug: row.topic_slug || row.topicSlug,
+            createdAt: row.created_at || row.createdAt,
           }));
 
           const merged = persistence.mergeBookmarks(localBookmarks, dbBookmarks, "id");

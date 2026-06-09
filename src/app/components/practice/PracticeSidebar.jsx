@@ -9,10 +9,10 @@ import {
   Building2, 
   Trophy, 
   Bookmark, 
-  FolderHeart, 
   History, 
   GraduationCap, 
   Flame, 
+  ScrollText,
   ChevronRight 
 } from "lucide-react";
 
@@ -28,14 +28,16 @@ export default function PracticeSidebar({
   monthlyGoal = 50,
   streakDays = 0,
   bestStreak = 0,
+  mySheetCount = 0,
   onBackToPractice
 }) {
   const navItems = [
+    { id: "my-sheet",     label: "My Sheet",     icon: ScrollText, badge: mySheetCount > 0 ? mySheetCount : null },
     { id: "problem-list", label: "Problem List", icon: ListTodo },
-    { id: "topic-wise", label: "Topic-wise", icon: GitMerge },
+    { id: "topic-wise",   label: "Topic-wise",   icon: GitMerge },
     { id: "company-wise", label: "Company-wise", icon: Building2 },
-    { id: "bookmarks", label: "Bookmarks", icon: Bookmark },
-    { id: "recent-solved", label: "Recent Solved", icon: History },
+    { id: "bookmarks",    label: "Bookmarks",    icon: Bookmark },
+    { id: "recent-solved",label: "Recent Solved",icon: History },
   ];
 
   const dailyGoalPercentage = Math.min(100, Math.round((dailySolved / dailyGoal) * 100) || 0);
@@ -65,11 +67,21 @@ export default function PracticeSidebar({
               className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-bold transition-all duration-200 ${
                 isActive
                   ? "bg-primary text-white shadow-md shadow-primary/20 dark:shadow-none"
-                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-50 dark:text-neutral-400 dark:hover:text-neutral-200 dark:hover:bg-neutral-800/50"
+                  : item.id === "my-sheet"
+                    ? "text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 border border-purple-200/60 dark:border-purple-800/40"
+                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-50 dark:text-neutral-400 dark:hover:text-neutral-200 dark:hover:bg-neutral-800/50"
               }`}
             >
-              <Icon size={18} className={isActive ? "text-white" : "text-slate-400 dark:text-neutral-500"} />
-              <span>{item.label}</span>
+              <Icon
+                size={18}
+                className={isActive ? "text-white" : item.id === "my-sheet" ? "text-purple-500 dark:text-purple-400" : "text-slate-400 dark:text-neutral-500"}
+              />
+              <span className="flex-1 text-left">{item.label}</span>
+              {item.badge && !isActive && (
+                <span className="text-[10px] font-black bg-primary text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-tight">
+                  {item.badge}
+                </span>
+              )}
             </button>
           );
         })}

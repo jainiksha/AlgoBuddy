@@ -71,3 +71,33 @@ WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can delete their own bookmarks" 
 ON problem_bookmarks FOR DELETE 
 USING (auth.uid() = user_id);
+
+-- ─── My Sheet table ──────────────────────────────────────────────────────────
+-- Stores user-curated personal problem lists (distinct from bookmarks)
+CREATE TABLE IF NOT EXISTS my_sheet (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    problem_id TEXT NOT NULL,
+    note TEXT DEFAULT '',
+    added_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id, problem_id)
+);
+
+-- Enable RLS
+ALTER TABLE my_sheet ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own sheet"
+ON my_sheet FOR SELECT
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert into their own sheet"
+ON my_sheet FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own sheet"
+ON my_sheet FOR UPDATE
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete from their own sheet"
+ON my_sheet FOR DELETE
+USING (auth.uid() = user_id);
