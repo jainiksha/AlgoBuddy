@@ -104,12 +104,7 @@ export default function ArenaPage() {
   const { user, loading } = useUser();
   const router = useRouter();
 
-  useEffect(() => {
-  localStorage.setItem(
-    "arena-show-xp-widget",
-    JSON.stringify(showXPWidget)
-  );
-}, [showXPWidget]);
+ 
 
   useEffect(() => {
     if (!loading && !user) {
@@ -126,6 +121,15 @@ export default function ArenaPage() {
   const [selectedOpponent, setSelectedOpponent] = useState(null);
   const [activeDuelProblem, setActiveDuelProblem] = useState("Reverse Linked List");
   const [showXPWidget, setShowXPWidget] = useState(true);
+
+   useEffect(() => {
+  if (typeof window !== "undefined") {
+    localStorage.setItem(
+      "arena-show-xp-widget",
+      JSON.stringify(showXPWidget)
+    );
+  }
+}, [showXPWidget]);
 
   const [currentUserStats, setCurrentUserStats] = useState({
     name: "Pankaj Singh",
@@ -683,21 +687,32 @@ export default function ArenaPage() {
 </button>
 
             {/* XP Progress */}
-            <div className="bg-white dark:bg-neutral-800 border border-slate-100 dark:border-neutral-800/80 rounded-2xl p-5 shadow-sm">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-sm font-bold text-slate-800 dark:text-neutral-200">XP Progress</h3>
-                <span className="text-xs text-primary dark:text-purple-400 font-bold uppercase tracking-wider">
-                  Level {currentUserStats.level}
-                </span>
-              </div>
-              <div className="w-full bg-slate-100 dark:bg-neutral-900 h-2.5 rounded-full overflow-hidden mb-3">
-                <div className="bg-primary h-full rounded-full" style={{ width: "84%" }} />
-              </div>
-              <div className="flex justify-between text-xs text-slate-500 dark:text-neutral-400">
-                <span>{currentUserStats.xp}/5000 XP</span>
-                <span className="font-semibold text-slate-700 dark:text-neutral-300">Next Reward: Level 18 🎁</span>
-              </div>
-            </div>
+{showXPWidget && (
+  <div className="bg-white dark:bg-neutral-800 border border-slate-100 dark:border-neutral-800/80 rounded-2xl p-5 shadow-sm">
+    <div className="flex justify-between items-center mb-3">
+      <h3 className="text-sm font-bold text-slate-800 dark:text-neutral-200">
+        XP Progress
+      </h3>
+      <span className="text-xs text-primary dark:text-purple-400 font-bold uppercase tracking-wider">
+        Level {currentUserStats.level}
+      </span>
+    </div>
+
+    <div className="w-full bg-slate-100 dark:bg-neutral-900 h-2.5 rounded-full overflow-hidden mb-3">
+      <div
+        className="bg-primary h-full rounded-full"
+        style={{ width: "84%" }}
+      />
+    </div>
+
+    <div className="flex justify-between text-xs text-slate-500 dark:text-neutral-400">
+      <span>{currentUserStats.xp}/5000 XP</span>
+      <span className="font-semibold text-slate-700 dark:text-neutral-300">
+        Next Reward: Level 18 🎁
+      </span>
+    </div>
+  </div>
+)}
 
             <div className="bg-white dark:bg-neutral-800 border border-slate-100 dark:border-neutral-800/80 rounded-2xl p-5 shadow-sm">
   <div className="flex items-center justify-between mb-4">
