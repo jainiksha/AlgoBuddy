@@ -754,7 +754,7 @@ export async function listCollaborationSessions({ limit, cursor } = {}) {
     startIndex = memorySessionsList.findIndex((s) => {
       const st = new Date(s.updatedAt).getTime();
       if (st < maxScore) return true;
-      if (st === maxScore && parsed.sessionId && s.id <= parsed.sessionId) return true;
+      if (st === maxScore && parsed.sessionId && s.id > parsed.sessionId) return true;
       return false;
     });
     if (startIndex < 0) {
