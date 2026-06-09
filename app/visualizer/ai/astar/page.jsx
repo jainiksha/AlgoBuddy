@@ -1,8 +1,9 @@
-import Animation from "@/app/visualizer/ai/astar/animation";
+"use client";
+import Animation from "./animation";
 import ExploreOther from "@/app/components/ui/exploreOther";
-import Code from "@/app/visualizer/ai/astar/codeBlock";
-import Quiz from "@/app/visualizer/ai/astar/quiz";
-import Content from "@/app/visualizer/ai/astar/content";
+import Code from "./codeBlock";
+import Quiz from "./quiz";
+import Content from "./content";
 import ModuleCard from "@/app/components/ui/ModuleCard";
 import VisualizerPageLayout, { createVisualizerPaths } from "@/app/visualizer/components/VisualizerPageLayout";
 import { MODULE_MAPS } from "@/lib/modulesMap";
