@@ -1,0 +1,128 @@
+package com.algobuddy.backend.service;
+
+import com.algobuddy.backend.dto.ProgressRequest;
+import com.algobuddy.backend.dto.ProgressResponse;
+import com.algobuddy.backend.entity.UserPracticeStats;
+import com.algobuddy.backend.entity.UserProgress;
+import com.algobuddy.backend.repository.UserPracticeStatsRepository;
+import com.algobuddy.backend.repository.UserProgressRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class PracticeService {
+
+    private final UserProgressRepository progressRepository;
+    private final UserPracticeStatsRepository statsRepository;
+
+    @Transactional(readOnly = true)
+    public ProgressResponse getUserProgress(UUID userId) {
+        List<UserProgress> progressList = progressRepository.findByUserId(userId);
+        
+        Map<String, ProgressResponse.ProgressDetail> progressMap = progressList.stream()
+                .collect(Collectors.toMap(
+                        UserProgress::getProblemId, 
+                        up -> new ProgressResponse.ProgressDetail(up.getStatus(), up.getUpdatedAt())
+                ));
+
+        UserPracticeStats stats = statsRepository.findById(userId)
+                .orElse(new UserPracticeStats(userId, 0, 0, null, 0));
+
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime startOfDay = now.toLocalDate().atStartOfDay(now.getOffset()).toOffsetDateTime();
+        OffsetDateTime startOfWeek = now.toLocalDate().with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY)).atStartOfDay(now.getOffset()).toOffsetDateTime();
+        OffsetDateTime startOfMonth = now.toLocalDate().withDayOfMonth(1).atStartOfDay(now.getOffset()).toOffsetDateTime();
+
+        int dailySolved = 0;
+        int weeklySolved = 0;
+        int monthlySolved = 0;
+
+        for (UserProgress p : progressList) {
+            if ("Completed".equals(p.getStatus()) && p.getUpdatedAt() != null) {
+                if (!p.getUpdatedAt().isBefore(startOfDay)) {
+                    dailySolved++;
+                }
+                if (!p.getUpdatedAt().isBefore(startOfWeek)) {
+                    weeklySolved++;
+                }
+                if (!p.getUpdatedAt().isBefore(startOfMonth)) {
+                    monthlySolved++;
+                }
+            }
+        }
+
+        return ProgressResponse.builder()
+                .progress(progressMap)
+                .currentStreak(stats.getCurrentStreak())
+                .longestStreak(stats.getLongestStreak())
+                .visualizedCount(stats.getVisualizedCount())
+                .dailySolved(dailySolved)
+                .weeklySolved(weeklySolved)
+                .monthlySolved(monthlySolved)
+                .build();
+    }
+
+    @Transactional
+    public ProgressResponse updateProgress(UUID userId, ProgressRequest request) {
+        // 1. Update Problem Progress
+        Optional<UserProgress> existingProgress = progressRepository.findByUserIdAndProblemId(userId, request.getProblemId());
+        
+        if (existingProgress.isPresent()) {
+            UserProgress progress = existingProgress.get();
+            progress.setStatus(request.getStatus());
+            progress.setUpdatedAt(OffsetDateTime.now());
+            progressRepository.save(progress);
+        } else {
+            UserProgress newProgress = new UserProgress();
+            newProgress.setUserId(userId);
+            newProgress.setProblemId(request.getProblemId());
+            newProgress.setStatus(request.getStatus());
+            newProgress.setUpdatedAt(OffsetDateTime.now());
+            progressRepository.save(newProgress);
+        }
+
+        // 2. Update Daily Streak
+        if ("Completed".equals(request.getStatus())) {
+            updateStreak(userId);
+        }
+        
+        return getUserProgress(userId);
+    }
+
+    private void updateStreak(UUID userId) {
+        UserPracticeStats stats = statsRepository.findById(userId)
+                .orElse(new UserPracticeStats(userId, 0, 0, null, 0));
+
+        LocalDate today = LocalDate.now();
+        LocalDate lastActive = stats.getLastActiveDate();
+
+        if (lastActive == null) {
+            stats.setCurrentStreak(1);
+            stats.setLongestStreak(1);
+        } else if (lastActive.equals(today.minusDays(1))) {
+            // Consecutive day
+            stats.setCurrentStreak(stats.getCurrentStreak() + 1);
+            if (stats.getCurrentStreak() > stats.getLongestStreak()) {
+                stats.setLongestStreak(stats.getCurrentStreak());
+            }
+        } else if (!lastActive.equals(today)) {
+            // Streak broken (not today and not yesterday)
+            stats.setCurrentStreak(1);
+        }
+        // If lastActive == today, do nothing (streak already incremented today)
+
+        stats.setLastActiveDate(today);
+        statsRepository.save(stats);
+    }
+}
