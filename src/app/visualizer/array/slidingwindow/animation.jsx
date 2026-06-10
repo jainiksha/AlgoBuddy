@@ -1,12 +1,12 @@
 "use client";
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { gsap } from "gsap";
 import ResetButton from "@/app/components/ui/resetButton";
 import GoButton from "@/app/components/ui/goButton";
 import PlaybackControls from "@/app/components/ui/PlaybackControls";
 import useVisualizerKeyboard from "@/app/hooks/useVisualizerKeyboard";
 import { useAnimationEngine } from "@/lib/visualizer/useAnimationEngine";
-import html2canvas from "html2canvas";
+
 import { 
   generateStatesFixedMax, 
   generateStatesFixedAvg, 
@@ -40,10 +40,7 @@ const Animation = () => {
   const [bestResult, setBestResult] = useState(null);
   const [stepExplanation, setStepExplanation] = useState("");
 
-  const animationRef = useRef(null);
-  const wasPausedRef = useRef(false);
-  const stateQueueRef = useRef([]);
-  const currentStateIdxRef = useRef(0);
+  const visualizerRef = useRef(null);
   const elementRefs = useRef([]);
   const [steps, setSteps] = useState([]);
   const [visualState, setVisualState] = useState({
@@ -94,23 +91,9 @@ const Animation = () => {
     // Call any reset initialization logic here if needed
   }, []);
 
-  const animateStep = useCallback(() => {
-    if (currentStateIdxRef.current >= stateQueueRef.current.length) {
-      setIsAnimating(false);
-      setMessage("Visualization completed.");
-      setMessageType("success");
-      setShowQuiz(true);
-      return;
-    }
-
-    const state = stateQueueRef.current[currentStateIdxRef.current];
-    const delay = 1500 / 1; // Replace speedRef.current with actual speed value
-
-  const link = document.createElement("a");
-  link.download = "sliding-window-visualization.png";
-  link.href = canvas.toDataURL("image/png");
-  link.click();
-};
+  useEffect(() => {
+    if (!visualState) return;
+    const state = visualState;
 
     elementRefs.current.forEach((ref, index) => {
       if (!ref) return;
@@ -131,12 +114,12 @@ const Animation = () => {
       }
     });
 
-    if (state.done) {
+    if (state.done && engine.isPlaying) {
       setMessage("Visualization completed.");
       setMessageType("success");
       setShowQuiz(true);
     }
-  }, []);
+  }, [visualState, engine.isPlaying]);
 
   const handleGo = (e) => {
     e.preventDefault();
