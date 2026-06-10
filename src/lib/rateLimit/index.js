@@ -164,23 +164,30 @@ let localSmtpDate = new Date().toISOString().split("T")[0];
 export async function checkGlobalSmtpQuota(maxPerDay = 500) {
   const today = new Date().toISOString().split("T")[0];
 
+  let count;
+
   if (!redis) {
     if (localSmtpDate !== today) {
       localSmtpCounter = 0;
       localSmtpDate = today;
     }
     localSmtpCounter += 1;
-    return {
-      allowed: localSmtpCounter <= maxPerDay,
-      remaining: Math.max(0, maxPerDay - localSmtpCounter),
-    };
+    count = localSmtpCounter;
+  } else {
+    const dailyKey = `smtp:quota:${today}`;
+    count = await redis.incr(dailyKey);
+    if (count === 1) {
+      await redis.expire(dailyKey, 86400);
+    }
   }
 
-  const dailyKey = `smtp:quota:${today}`;
-  const count = await redis.incr(dailyKey);
-  if (count === 1) {
-    await redis.expire(dailyKey, 86400);
+  const usagePercent = (count / maxPerDay) * 100;
+  if (usagePercent >= 80) {
+    console.warn(
+      `[smtp-quota] ${usagePercent.toFixed(0)}% of daily SMTP quota (${count}/${maxPerDay}) consumed`,
+    );
   }
+
   return {
     allowed: count <= maxPerDay,
     remaining: Math.max(0, maxPerDay - count),
