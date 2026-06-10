@@ -66,7 +66,13 @@ export async function proxy(request) {
 
   // Calling getUser() triggers a token refresh if the access token is expired.
   // This must not be removed — without it, sessions silently expire mid-browse.
-  await supabase.auth.getUser();
+  // Wrapped in try/catch: a network timeout (ConnectTimeoutError) must not crash
+  // the middleware and block all downstream requests with a non-JSON error response.
+  try {
+    await supabase.auth.getUser();
+  } catch (err) {
+    console.warn("[proxy] supabase.auth.getUser() failed (network issue?):", err?.cause?.code ?? err?.message);
+  }
 
   return supabaseResponse;
 }
