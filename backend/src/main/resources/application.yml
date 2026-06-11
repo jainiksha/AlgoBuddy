@@ -32,6 +32,5 @@ spring:
 supabase:
   url: ${SUPABASE_URL:https://your-project-id.supabase.co}
 
-cors:
-  allowed:
-    origins: ${ALLOWED_ORIGINS:http://localhost:3000,https://algobuddy.vercel.app}
+app:
+  allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,https://algobuddy.vercel.app}
