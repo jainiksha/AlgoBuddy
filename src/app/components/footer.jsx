@@ -15,18 +15,21 @@ import {
 
 import TermsOfServiceModal from '@/app/components/termsOfServicesModal'
 import CookiePolicyModal from '@/app/components/cookie'
-import CodeOfConductModel from '@/app/components/CodeOfConductModel'
+
 
 const Footer = () => {
   
   const [showTermsModal, setShowTermsModal] = useState(false)
   const [showCookieModal, setShowCookieModal] = useState(false)
-  const [ShowShowOfConduct, setShowCodeOfConductModal] = useState(false)
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterEmailError, setNewsletterEmailError] = useState("");
 
-  const validateEmail = (value) => {
+  const validateEmail = (value, isSubmit = false) => {
     if (!value) {
+      if (isSubmit) {
+        setNewsletterEmailError("Email is required");
+        return false;
+      }
       setNewsletterEmailError("");
       return true;
     }
@@ -41,7 +44,7 @@ const Footer = () => {
 
   const handleNewsletterSubscribe = (e) => {
     e.preventDefault();
-    if (!validateEmail(newsletterEmail)) {
+    if (!validateEmail(newsletterEmail, true)) {
       return;
     }
     // TODO: Implement newsletter subscription API call here
@@ -124,7 +127,7 @@ const Footer = () => {
               </div>
 
               {/* Newsletter */}
-              <div className="mt-10">
+              <form onSubmit={handleNewsletterSubscribe} className="mt-10">
                 <h3 className="text-white font-semibold mb-2">Stay updated</h3>
                 <p className="text-sm mb-4 text-gray-400 max-w-xs">
                   Subscribe to get the latest updates, features, and tutorials.
@@ -134,13 +137,23 @@ const Footer = () => {
                   <input
                     type="email"
                     placeholder="Enter your email"
+                    value={newsletterEmail}
+                    onChange={(e) => {
+                      setNewsletterEmail(e.target.value);
+                      validateEmail(e.target.value, false);
+                    }}
                     className="flex-1 bg-transparent px-4 py-2.5 text-sm outline-none text-white placeholder-gray-500"
                   />
-                  <button className="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 text-sm font-medium transition-colors">
+                  <button type="submit" className="bg-primary hover:bg-primary/90 text-white px-5 py-2.5 text-sm font-medium transition-colors">
                     Subscribe
                   </button>
                 </div>
-              </div>
+                {newsletterEmailError && (
+                  <p className="text-red-500 text-xs mt-2" role="alert">
+                    {newsletterEmailError}
+                  </p>
+                )}
+              </form>
             </div>
 
             {/* Quick Links */}
@@ -250,7 +263,9 @@ const Footer = () => {
             <div>
               <h3 className={footerHeading}>Legal</h3>
               <div className="space-y-4">
-                <Link href="/privacy">
+                <Link href="/privacy"
+                  className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors duration-300 text-sm"
+                >
                   Privacy Policy
                 </Link>
                 <button
@@ -265,12 +280,11 @@ const Footer = () => {
                 >
                   Cookies Policy
                 </button>
-                <button
-                  onClick={() => setShowCodeOfConductModal(true)}
-                  className={footerLink}
+                <Link href="/code-of-conduct"
+                  className="flex items-center gap-3 text-gray-400 hover:text-white transition-colors duration-300 text-sm"
                 >
-                  Code of Conduct
-                </button>
+                  Code Of Conduct
+                </Link>
               </div>
             </div>
           </div>
@@ -295,10 +309,7 @@ const Footer = () => {
         isOpen={showCookieModal}
         onClose={() => setShowCookieModal(false)}
       />
-      <CodeOfConductModel
-        isOpen={ShowShowOfConduct}
-        onClose={() => setShowCodeOfConductModal(false)}
-      />
+      
     </>
   )
 }

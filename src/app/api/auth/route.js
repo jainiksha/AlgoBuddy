@@ -31,7 +31,6 @@ function getValidKey(value) {
 const supabaseUrl = getValidUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
 const supabaseAnonKey = getValidKey(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 const supabaseServiceKey = getValidKey(process.env.SUPABASE_SERVICE_KEY);
-const turnstileConfigured = process.env.TURNSTILE_CONFIGURED === "true";
 
 const supabaseAdmin =
   supabaseUrl && supabaseServiceKey
@@ -53,6 +52,34 @@ const redis =
     ? Redis.fromEnv()
     : null;
 
+let isRedisOffline = false;
+let redisOfflineUntil = 0;
+const COOLDOWN_MS = 10000;
+
+function markRedisOffline(err) {
+  if (!isRedisOffline) {
+    isRedisOffline = true;
+    console.error(`[auth] Redis connection failed, activating in-memory fallback. Error: ${err.message || err}`);
+  }
+  redisOfflineUntil = Date.now() + COOLDOWN_MS;
+}
+
+function markRedisOnline() {
+  if (isRedisOffline) {
+    isRedisOffline = false;
+    console.log("[auth] Redis connection restored, resuming Redis-based auth lockout.");
+  }
+}
+
+function shouldTryRedis() {
+  if (!redis) return false;
+  if (!isRedisOffline) return true;
+  if (Date.now() >= redisOfflineUntil) {
+    return true;
+  }
+  return false;
+}
+
 function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
 }
@@ -68,9 +95,14 @@ function failKey(email) {
 async function isEmailLocked(email) {
   if (!email) return false;
 
-  if (redis) {
-    const value = await redis.get(lockKey(email));
-    return Boolean(value);
+  if (shouldTryRedis()) {
+    try {
+      const value = await redis.get(lockKey(email));
+      markRedisOnline();
+      return Boolean(value);
+    } catch (err) {
+      markRedisOffline(err);
+    }
   }
 
   const until = memoryLockouts.get(email);
@@ -85,19 +117,25 @@ async function isEmailLocked(email) {
 async function recordLoginFailure(email) {
   if (!email) return { locked: false, remaining: LOGIN_FAILURE_THRESHOLD };
 
-  if (redis) {
-    const attempts = await redis.incr(failKey(email));
-    // Ensure the failure counter expires.
-    if (attempts === 1) {
-      await redis.expire(failKey(email), LOGIN_FAILURE_WINDOW_SECONDS);
+  if (shouldTryRedis()) {
+    try {
+      const attempts = await redis.incr(failKey(email));
+      // Ensure the failure counter expires.
+      if (attempts === 1) {
+        await redis.expire(failKey(email), LOGIN_FAILURE_WINDOW_SECONDS);
+      }
+      const remaining = Math.max(0, LOGIN_FAILURE_THRESHOLD - attempts);
+      if (attempts >= LOGIN_FAILURE_THRESHOLD) {
+        await redis.set(lockKey(email), "1", { ex: LOGIN_LOCK_SECONDS });
+        await redis.del(failKey(email));
+        markRedisOnline();
+        return { locked: true, remaining: 0 };
+      }
+      markRedisOnline();
+      return { locked: false, remaining };
+    } catch (err) {
+      markRedisOffline(err);
     }
-    const remaining = Math.max(0, LOGIN_FAILURE_THRESHOLD - attempts);
-    if (attempts >= LOGIN_FAILURE_THRESHOLD) {
-      await redis.set(lockKey(email), "1", { ex: LOGIN_LOCK_SECONDS });
-      await redis.del(failKey(email));
-      return { locked: true, remaining: 0 };
-    }
-    return { locked: false, remaining };
   }
 
   const now = Date.now();
@@ -129,10 +167,15 @@ async function recordLoginFailure(email) {
 
 async function clearLoginFailures(email) {
   if (!email) return;
-  if (redis) {
-    await redis.del(failKey(email));
-    await redis.del(lockKey(email));
-    return;
+  if (shouldTryRedis()) {
+    try {
+      await redis.del(failKey(email));
+      await redis.del(lockKey(email));
+      markRedisOnline();
+      return;
+    } catch (err) {
+      markRedisOffline(err);
+    }
   }
   memoryFailures.delete(email);
   memoryLockouts.delete(email);
@@ -148,7 +191,7 @@ export async function POST(req) {
     const isProduction = process.env.NODE_ENV === "production";
     const hasRedis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN;
     if (isProduction && !hasRedis) {
-      return jsonResponse({ success: false, message: "Server misconfigured: Redis environment variables are not set." }, 500);
+      console.warn("Production environment is missing Redis variables; using in-memory rate limiters/lockouts.");
     }
 
     let body;
@@ -170,28 +213,31 @@ export async function POST(req) {
 
     const ip = getClientIp(req.headers);
 
-    const turnstileSecretKey = process.env.TURNSTILE_SECRET_KEY;
-    const isConfigured = turnstileConfigured && turnstileSecretKey && turnstileSecretKey !== "undefined";
-
+    const explicitBypass = process.env.TURNSTILE_BYPASS === "true";
     let captcha;
-    if (!isConfigured) {
-      const explicitBypass = process.env.TURNSTILE_BYPASS === "true";
 
-      if (isProduction && !explicitBypass) {
-        return jsonResponse({ success: false, message: "Server misconfigured: CAPTCHA secret key is not set." }, 500);
-      }
-
-      if (!explicitBypass) {
-        console.warn("TURNSTILE_SECRET_KEY is not configured. Skipping captcha verification. This should only be used for local development.");
-      }
-
+    if (explicitBypass) {
       captcha = { ok: true };
     } else {
-      captcha = await verifyTurnstile(String(captchaToken), { ip });
+      try {
+        captcha = await verifyTurnstile(String(captchaToken), { ip });
+      } catch (err) {
+        if (err.message === 'CAPTCHA_CONFIG_MISSING') {
+          if (!isProduction) {
+            console.warn("TURNSTILE_SECRET_KEY is not configured. Skipping captcha verification. This should only be used for local development.");
+            captcha = { ok: true };
+          } else {
+            console.error("Server misconfigured: CAPTCHA secret key is not set.");
+            return jsonResponse({ success: false, message: "We're having trouble verifying the CAPTCHA. Please try again later." }, 500);
+          }
+        } else {
+          throw err;
+        }
+      }
     }
 
     if (!captcha.ok) {
-      return jsonResponse({ success: false, message: captcha.error }, 400);
+      return jsonResponse({ success: false, message: captcha.error || "Captcha verification failed. Please try again." }, 400);
     }
 
     const normalizedEmail = normalizeEmail(email);
@@ -214,10 +260,12 @@ export async function POST(req) {
 
       const admin = createClient(supabaseUrl, serviceKey);
 
+      const emailConfirm = process.env.AUTO_CONFIRM_EMAIL === "true";
+
       const { error } = await admin.auth.admin.createUser({
         email,
         password,
-        email_confirm: true,
+        email_confirm: emailConfirm,
         user_metadata: { display_name: name },
       });
 
@@ -225,10 +273,18 @@ export async function POST(req) {
         return jsonResponse({ success: false, message: error.message }, 400);
       }
 
+      if (emailConfirm) {
+        return jsonResponse({
+          success: true,
+          message: "Signup successful. You can now log in!",
+          trigger: true,
+        });
+      }
+
       return jsonResponse({
         success: true,
-        message: "Signup successful. You can now log in!",
-        trigger: true,
+        message: "Signup successful! Please check your email to verify your account before logging in.",
+        trigger: false,
       });
     }
 
