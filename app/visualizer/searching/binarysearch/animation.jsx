@@ -291,6 +291,12 @@ const BinarySearch = () => {
             </div>
           </div>
         </div>
+        <PlaybackControls
+  isPaused={isPaused}
+  speed={speed}
+  onTogglePlayPause={togglePlayPause}
+  onSpeedChange={setSpeed}
+/>
         {isAnimating && (
           <div className="flex flex-col sm:flex-row items-center justify-between mb-4 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl border border-gray-200 dark:border-gray-700 gap-4">
             <button
