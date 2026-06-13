@@ -2,7 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useUser } from "@/features/user/UserContext";
 import { supabase } from "@/lib/supabase";
 import { Search, Moon, Sun, Menu, X, ChevronDown, Swords, LogOut } from "lucide-react";
@@ -46,6 +46,7 @@ export default function Navbar() {
   const [themeMounted, setThemeMounted] = useState(false);
 
   const pathname = usePathname();
+  const router = useRouter();
  
   const { user, setUser } = useUser();
   const userRef = useRef(null);
