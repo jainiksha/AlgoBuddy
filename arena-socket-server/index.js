@@ -32,45 +32,76 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 4000;
 
-// Simple in-memory matchmaking queue
-// In production, this should be a Redis queue or similar
+// State Tracking
 let matchmakingQueue = [];
+const activeMatches = new Map(); // matchId -> match Details
+const socketToMatch = new Map(); // socketId -> matchId
+
+// Rate Limiting (Token Bucket per socket)
+const rateLimits = new Map(); // socketId -> { lastRequestTime, tokens }
+const MAX_TOKENS = 10;
+const REFILL_RATE_MS = 200; // 1 token every 200ms
+
+function isRateLimited(socketId) {
+  const now = Date.now();
+  if (!rateLimits.has(socketId)) {
+    rateLimits.set(socketId, { lastRequestTime: now, tokens: MAX_TOKENS - 1 });
+    return false;
+  }
+  
+  const limit = rateLimits.get(socketId);
+  const timePassed = now - limit.lastRequestTime;
+  const tokensToAdd = Math.floor(timePassed / REFILL_RATE_MS);
+  
+  if (tokensToAdd > 0) {
+    limit.tokens = Math.min(MAX_TOKENS, limit.tokens + tokensToAdd);
+    limit.lastRequestTime = now;
+  }
+  
+  if (limit.tokens > 0) {
+    limit.tokens--;
+    return false;
+  }
+  return true;
+}
 
 io.on("connection", (socket) => {
   console.log(`User connected: ${socket.id}`);
 
   socket.on("join_matchmaking", (data) => {
-    console.log(`User joined matchmaking:`, data);
+    if (isRateLimited(socket.id)) return;
     
-    // Check if there is someone in the queue
-    if (matchmakingQueue.length > 0) {
-      const opponent = matchmakingQueue.shift();
-      
-      // Prevent matching with oneself (if testing with multiple tabs on same account)
-      // COMMENTED OUT FOR EASIER LOCAL TESTING:
-      /*
-      if (opponent.userId === data.userId && opponent.socketId !== socket.id) {
-        matchmakingQueue.push(opponent);
-        matchmakingQueue.push({ ...data, socketId: socket.id });
-        return;
-      }
-      */
+    console.log(`User joined matchmaking:`, data);
+    const targetTopic = data.topic || "Arrays";
+    const targetDifficulty = data.difficulty || "Easy";
 
+    // Filter queue to find exact match
+    const matchIndex = matchmakingQueue.findIndex(
+      (p) => p.topic === targetTopic && p.difficulty === targetDifficulty && p.userId !== data.userId
+    );
+
+    if (matchIndex !== -1) {
+      // Match found!
+      const opponent = matchmakingQueue.splice(matchIndex, 1)[0];
       console.log(`Match found: ${opponent.userId} vs ${data.userId}`);
       
       const matchId = `match-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const topic = opponent.topic || data.topic || "Arrays";
-      const difficulty = opponent.difficulty || data.difficulty || "Easy";
 
       const matchDetails = {
         matchId,
-        topic,
-        difficulty,
+        topic: targetTopic,
+        difficulty: targetDifficulty,
+        status: "in-progress",
         players: [
           { userId: opponent.userId, name: opponent.name, socketId: opponent.socketId },
           { userId: data.userId, name: data.name, socketId: socket.id },
         ],
       };
+
+      // Save to active matches state
+      activeMatches.set(matchId, matchDetails);
+      socketToMatch.set(socket.id, matchId);
+      socketToMatch.set(opponent.socketId, matchId);
 
       // Notify both players
       io.to(opponent.socketId).emit("match_found", matchDetails);
@@ -79,29 +110,27 @@ io.on("connection", (socket) => {
       // Join room for real-time duel syncing
       socket.join(matchId);
       const opponentSocket = io.sockets.sockets.get(opponent.socketId);
-      if (opponentSocket) {
-        opponentSocket.join(matchId);
-      }
+      if (opponentSocket) opponentSocket.join(matchId);
 
     } else {
-      // Add to queue
-      matchmakingQueue.push({ ...data, socketId: socket.id });
+      // Add to queue with specific preferences
+      matchmakingQueue.push({ ...data, topic: targetTopic, difficulty: targetDifficulty, socketId: socket.id });
       console.log(`Added to queue. Queue length: ${matchmakingQueue.length}`);
     }
   });
 
   socket.on("leave_matchmaking", () => {
+    if (isRateLimited(socket.id)) return;
     matchmakingQueue = matchmakingQueue.filter((p) => p.socketId !== socket.id);
-    console.log(`User left matchmaking: ${socket.id}. Queue length: ${matchmakingQueue.length}`);
   });
 
   socket.on("join_match", (data) => {
     socket.join(data.matchId);
-    console.log(`User ${data.userId} joined match room ${data.matchId}`);
   });
 
   // Duel Room Events
   socket.on("code_update", (data) => {
+    if (isRateLimited(socket.id)) return;
     // Broadcast code to opponent in the same room
     socket.to(data.matchId).emit("opponent_code_update", {
       code: data.code,
@@ -110,14 +139,17 @@ io.on("connection", (socket) => {
   });
 
   socket.on("test_submit", (data) => {
-    // Broadcast test start to opponent
-    socket.to(data.matchId).emit("opponent_test_submit", {
-      userId: data.userId
-    });
+    if (isRateLimited(socket.id)) return;
+    socket.to(data.matchId).emit("opponent_test_submit", { userId: data.userId });
   });
 
   socket.on("test_result", (data) => {
-    // Broadcast test results to opponent
+    if (isRateLimited(socket.id)) return;
+    
+    // Security: Validate the user is part of the active match before trusting the result broadcast
+    const matchId = socketToMatch.get(socket.id);
+    if (!matchId || matchId !== data.matchId) return;
+
     socket.to(data.matchId).emit("opponent_test_result", {
       userId: data.userId,
       passed: data.passed,
@@ -127,13 +159,47 @@ io.on("connection", (socket) => {
   });
 
   socket.on("match_complete", (data) => {
-    socket.to(data.matchId).emit("match_ended", {
-      winnerId: data.winnerId
-    });
+    if (isRateLimited(socket.id)) return;
+    
+    // Security check: Only allow match end if coming from an active match participant
+    const matchId = socketToMatch.get(socket.id);
+    if (!matchId || matchId !== data.matchId) return;
+    
+    const match = activeMatches.get(matchId);
+    if (match && match.status !== "completed") {
+      match.status = "completed";
+      // Emit to everyone in room including sender
+      io.in(matchId).emit("match_ended", { winnerId: data.winnerId });
+      
+      // Cleanup match state
+      match.players.forEach(p => socketToMatch.delete(p.socketId));
+      activeMatches.delete(matchId);
+    }
   });
 
   socket.on("disconnect", () => {
+    // 1. Remove from matchmaking queue if present
     matchmakingQueue = matchmakingQueue.filter((p) => p.socketId !== socket.id);
+    
+    // 2. Handle active match disconnects
+    const matchId = socketToMatch.get(socket.id);
+    if (matchId) {
+      const match = activeMatches.get(matchId);
+      if (match && match.status !== "completed") {
+        match.status = "completed";
+        // Find opponent and declare them the winner by default
+        const opponent = match.players.find(p => p.socketId !== socket.id);
+        if (opponent) {
+          io.to(opponent.socketId).emit("opponent_disconnected", { winnerId: opponent.userId });
+        }
+        
+        // Cleanup
+        match.players.forEach(p => socketToMatch.delete(p.socketId));
+        activeMatches.delete(matchId);
+      }
+    }
+    
+    rateLimits.delete(socket.id);
     console.log(`User disconnected: ${socket.id}. Queue length: ${matchmakingQueue.length}`);
   });
 });
@@ -141,13 +207,14 @@ io.on("connection", (socket) => {
 app.get("/debug", (req, res) => {
   res.json({
     queueLength: matchmakingQueue.length,
+    activeMatchesCount: activeMatches.size,
     queue: matchmakingQueue,
     activeConnections: io.engine.clientsCount
   });
 });
 
 app.get("/health", (req, res) => {
-  res.json({ status: "Arena Socket Server is running", queueLength: matchmakingQueue.length });
+  res.json({ status: "Arena Socket Server is running" });
 });
 
 server.listen(PORT, () => {
