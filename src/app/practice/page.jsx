@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { 
   Search, 
@@ -34,6 +34,7 @@ import { useMySheet } from "@/app/hooks/useMySheet";
 export default function PracticePage() {
   const { user } = useUser();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Views: 'problem-list', 'topic-wise', 'company-wise', 'bookmarks', 'recent-solved'
   const [activeView, setActiveView] = useState("problem-list");
@@ -65,17 +66,16 @@ export default function PracticePage() {
   const { bookmarks, isBookmarked, toggleBookmark } = useProblemBookmarks();
   const [mounted, setMounted] = useState(false);
 
-  // Authentication check & mount
+  // Mount
   useEffect(() => {
     setMounted(true);
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const view = params.get("view");
-      if (view) {
-        setActiveView(view);
-      }
-    }
   }, []);
+
+  // Sync activeView with the URL ?view= param so browser Back/Forward works
+  useEffect(() => {
+    const view = searchParams.get("view") || "problem-list";
+    setActiveView(view);
+  }, [searchParams]);
 
   const ensureLoggedIn = () => {
     if (!user) {
@@ -345,9 +345,11 @@ export default function PracticePage() {
             if (["my-sheet", "bookmarks", "recent-solved"].includes(view)) {
               if (!ensureLoggedIn()) return;
             }
-            setActiveView(view);
             setCurrentPage(1); // Reset page on view change
             setSelectedCompanyFilter("All"); // Reset company filter
+            // Push to URL so the browser records a history entry;
+            // the searchParams useEffect above will sync activeView in response.
+            router.push(`/practice?view=${view}`);
           }}
           solvedCount={stats.solved}
           dailySolved={stats.dailySolved}

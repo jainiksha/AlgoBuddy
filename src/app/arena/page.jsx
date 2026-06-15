@@ -146,7 +146,8 @@ export default function ArenaPage() {
       if (!ensureLoggedIn()) return;
     }
     if (typeof window !== "undefined") {
-      window.location.hash = tabId === "home" ? "" : tabId;
+      router.push(tabId === "home" ? "/arena" : `/arena#${tabId}`);
+      setActiveTab(tabId);
     }
   };
 
@@ -158,9 +159,7 @@ export default function ArenaPage() {
       
       if (validTabs.includes(hash)) {
         if (protectedTabs.includes(hash) && !user) {
-          if (typeof window !== "undefined") {
-            window.location.hash = "";
-          }
+          router.push("/arena");
           setActiveTab("home");
           return;
         }
@@ -176,7 +175,7 @@ export default function ArenaPage() {
     return () => {
       window.removeEventListener("hashchange", handleHashChange);
     };
-  }, [user]);
+  }, [user, router]);
 
   // Modals state
   const [matchmakingOpen, setMatchmakingOpen] = useState(false);

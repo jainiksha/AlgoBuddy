@@ -1,5 +1,7 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
+import fs from "fs";
+import path from "path";
 import { Redis } from "@upstash/redis";
 import { sanitizeSessionText } from "./sessionTrace.js";
 
@@ -152,6 +154,10 @@ const memorySessions = new Map();
 const memorySessionTtls = new Map();
 const memoryLocks = new Map();
 let memorySweepTimer = null;
+let reconciliationTimer = null;
+const RECONCILIATION_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+let memoryWriteCount = 0;
+const MEMORY_WRITE_WARN_THRESHOLD = 50;
 
 const redis =
   process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
@@ -170,11 +176,68 @@ function markRedisOffline(err) {
   redisOfflineUntil = Date.now() + COOLDOWN_MS;
 }
 
+let backfillInProgress = false;
+
+async function backfillMemorySessionsToRedis() {
+  if (!redis || memorySessions.size === 0 || backfillInProgress) return 0;
+  backfillInProgress = true;
+  let migrated = 0;
+  try {
+    for (const [id, session] of memorySessions.entries()) {
+      const ttl = memorySessionTtls.get(id);
+      if (!ttl || ttl <= Date.now()) continue;
+      const existing = await redis.get(sessionKey(id));
+      if (!existing) {
+        await redis.set(sessionKey(id), session, { ex: SESSION_TTL_SECONDS });
+        migrated++;
+        memorySessions.delete(id);
+        memorySessionTtls.delete(id);
+      } else {
+        // Session already in Redis, safe to remove from memory
+        memorySessions.delete(id);
+        memorySessionTtls.delete(id);
+      }
+    }
+    if (migrated > 0) {
+      console.log(`[sessionStore] Migrated ${migrated} sessions from memory to Redis. Memory sessions remaining: ${memorySessions.size}`);
+    } else if (memorySessions.size > 0) {
+      console.log(`[sessionStore] Reconciliation complete: ${memorySessions.size} sessions already in Redis, cleared from memory.`);
+    }
+    return migrated;
+  } catch (err) {
+    console.error("[sessionStore] Failed to backfill memory sessions to Redis:", err.message || err);
+    return 0;
+  } finally {
+    backfillInProgress = false;
+  }
+}
+
 function markRedisOnline() {
   if (isRedisOffline) {
     isRedisOffline = false;
     console.log("[sessionStore] Redis connection restored, resuming Redis session storage.");
+    backfillMemorySessionsToRedis().catch(err => {
+      console.error("[sessionStore] Failed to backfill memory sessions:", err.message || err);
+    });
   }
+}
+
+function startReconciliationTimer() {
+  if (reconciliationTimer) return;
+  reconciliationTimer = setInterval(async () => {
+    if (memorySessions.size > 0 && shouldTryRedis()) {
+      await backfillMemorySessionsToRedis();
+    }
+    // Log warning if memory session count exceeds threshold
+    if (memorySessions.size > MEMORY_WRITE_WARN_THRESHOLD) {
+      console.warn(`[sessionStore] High memory session count: ${memorySessions.size}. Redis may be experiencing prolonged outage.`);
+    }
+    // Log memory usage statistics
+    if (memorySessions.size > 0 || memoryWriteCount > 0) {
+      console.log(`[sessionStore] Memory session stats: ${memorySessions.size} active, ${memoryWriteCount} total writes to memory fallback.`);
+    }
+  }, RECONCILIATION_INTERVAL_MS);
+  if (reconciliationTimer.unref) reconciliationTimer.unref();
 }
 
 function shouldTryRedis() {
@@ -212,19 +275,25 @@ function touchMemorySession(sessionId) {
   memorySessionTtls.set(sessionId, Date.now() + SESSION_TTL_MS);
 }
 
-function validateCsrfOrigin(request) {
-  const origin = request.headers.get("origin") || "";
-  const referer = request.headers.get("referer") || "";
-  const host = request.headers.get("host") || "";
-  const allowedOrigins = [
-    `http://${host}`,
-    `https://${host}`,
-    process.env.NEXT_PUBLIC_APP_URL,
-  ].filter(Boolean);
+const TRUSTED_ORIGINS = (() => {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const origins = new Set([
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'https://algobuddy.me',
+    'https://www.algobuddy.me',
+    'https://algobuddy.vercel.app',
+  ]);
+  if (appUrl) origins.add(appUrl.replace(/\/+$/, ''));
+  return origins;
+})();
 
-  if (!origin && !referer) return false;
-  const source = origin || referer;
-  return allowedOrigins.some((allowed) => source.startsWith(allowed));
+function validateCsrfOrigin(request) {
+  const origin = request.headers.get("origin");
+  const referer = request.headers.get("referer");
+  const source = origin || referer || '';
+  const normalized = source.replace(/\/+$/, '');
+  return TRUSTED_ORIGINS.has(normalized);
 }
 
 function createId(prefix) {
@@ -340,6 +409,11 @@ async function readSession(sessionId) {
         const value = await redis.get(sessionKey(sessionId));
         session = value ? value : null;
         markRedisOnline();
+        // When Redis is healthy but session not found, also check memory fallback
+        // to cover sessions that haven't been backfilled yet
+        if (!session && memorySessions.has(sessionId)) {
+          session = memorySessions.get(sessionId) || null;
+        }
       } catch (err) {
         markRedisOffline(err);
         session = memorySessions.get(sessionId) || null;
@@ -418,13 +492,19 @@ async function writeSession(session) {
       } catch (err) {
         markRedisOffline(err);
         startMemorySweeper();
+        startReconciliationTimer();
         memorySessions.set(nextSession.id, nextSession);
         touchMemorySession(nextSession.id);
+        memoryWriteCount++;
+        console.warn(`[sessionStore] Session ${nextSession.id} written to memory fallback. Total memory writes: ${memoryWriteCount}`);
       }
     } else {
       startMemorySweeper();
+      startReconciliationTimer();
       memorySessions.set(nextSession.id, nextSession);
       touchMemorySession(nextSession.id);
+      memoryWriteCount++;
+      console.warn(`[sessionStore] Session ${nextSession.id} written to memory fallback. Total memory writes: ${memoryWriteCount}`);
     }
     return nextSession;
   };
@@ -1087,3 +1167,45 @@ export async function updateCollaborationSession(sessionId, patch = {}) {
 }
 
 export { leaveCollaborationSession };
+
+// Crash-recovery: on graceful shutdown, dump memory sessions to temp file
+if (typeof process !== "undefined" && process.on) {
+
+  function dumpMemorySessions() {
+    if (memorySessions.size === 0) return;
+    const dumpDir = process.env.TEMP_DIR || "/tmp";
+    const dumpPath = path.join(dumpDir, `algobuddy-session-store-dump-${Date.now()}.json`);
+    try {
+      const dump = {
+        timestamp: new Date().toISOString(),
+        sessions: Object.fromEntries(memorySessions),
+      };
+      if (!fs.existsSync(dumpDir)) {
+        fs.mkdirSync(dumpDir, { recursive: true });
+      }
+      fs.writeFileSync(dumpPath, JSON.stringify(dump, null, 2));
+      console.log(`[sessionStore] Dumped ${memorySessions.size} memory sessions to ${dumpPath}`);
+    } catch (err) {
+      console.error("[sessionStore] Failed to dump memory sessions:", err.message || err);
+    }
+  }
+
+  process.on("SIGTERM", () => {
+    console.log("[sessionStore] SIGTERM received, dumping memory sessions...");
+    // Attempt to backfill to Redis first if possible
+    if (redis && shouldTryRedis()) {
+      backfillMemorySessionsToRedis().finally(() => dumpMemorySessions());
+    } else {
+      dumpMemorySessions();
+    }
+  });
+
+  process.on("SIGINT", () => {
+    console.log("[sessionStore] SIGINT received, dumping memory sessions...");
+    if (redis && shouldTryRedis()) {
+      backfillMemorySessionsToRedis().finally(() => dumpMemorySessions());
+    } else {
+      dumpMemorySessions();
+    }
+  });
+}

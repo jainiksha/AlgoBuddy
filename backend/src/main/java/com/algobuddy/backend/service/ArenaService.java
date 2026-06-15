@@ -6,23 +6,57 @@ import com.algobuddy.backend.entity.ArenaMatch;
 import com.algobuddy.backend.entity.UserArenaProfile;
 import com.algobuddy.backend.repository.ArenaMatchRepository;
 import com.algobuddy.backend.repository.UserArenaProfileRepository;
+import io.github.bucket4j.Bandwidth;
+import io.github.bucket4j.Bucket;
+import io.github.bucket4j.ConsumptionProbe;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ArenaService {
 
+    private static final Logger log = LoggerFactory.getLogger(ArenaService.class);
+
     private final UserArenaProfileRepository profileRepository;
     private final ArenaMatchRepository matchRepository;
 
+    private final Map<UUID, Bucket> matchResultRateLimitCache = new ConcurrentHashMap<>();
+
+    private Bucket newMatchResultBucket() {
+        Bandwidth limit = Bandwidth.builder()
+                .capacity(3)
+                .refillGreedy(3, Duration.ofMinutes(1))
+                .build();
+        return Bucket.builder().addLimit(limit).build();
+    }
+
+    private void checkMatchResultRateLimit(UUID userId) {
+        Bucket bucket = matchResultRateLimitCache.computeIfAbsent(userId, k -> newMatchResultBucket());
+        ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
+        if (!probe.isConsumed()) {
+            throw new IllegalStateException("Rate limit exceeded. Max 3 match results per minute.");
+        }
+    }
+
     @Transactional
+    @Cacheable(value = "arenaProfile", key = "#userId", unless = "#result == null")
     public ArenaProfileResponse getProfile(UUID userId) {
         UserArenaProfile profile = profileRepository.findById(userId)
                 .orElseGet(() -> createDefaultProfile(userId));
@@ -33,17 +67,16 @@ public class ArenaService {
     }
     
     @Transactional(readOnly = true)
+    @Cacheable(value = "arenaLeaderboard", unless = "#result == null")
     public List<ArenaProfileResponse> getLeaderboard() {
-        List<UserArenaProfile> topPlayers = profileRepository.findTopPlayers();
+        List<UserArenaProfile> topPlayers = profileRepository.findTopPlayers(PageRequest.of(0, 50));
         
-        // Return top 50, assigning ranks 1 to 50
-        return topPlayers.stream()
-                .limit(50)
-                .map(profile -> {
-                    int rank = topPlayers.indexOf(profile) + 1;
-                    return mapToResponse(profile, rank);
-                })
-                .collect(Collectors.toList());
+        int rank = 1;
+        List<ArenaProfileResponse> result = new java.util.ArrayList<>();
+        for (UserArenaProfile profile : topPlayers) {
+            result.add(mapToResponse(profile, rank++));
+        }
+        return result;
     }
 
     @Transactional(readOnly = true)
@@ -69,14 +102,8 @@ public class ArenaService {
     }
     
     private Integer calculateRank(UUID userId) {
-        // Simple rank calculation: find position in the ordered list
-        List<UserArenaProfile> allPlayers = profileRepository.findTopPlayers();
-        for (int i = 0; i < allPlayers.size(); i++) {
-            if (allPlayers.get(i).getUserId().equals(userId)) {
-                return i + 1; // 1-indexed rank
-            }
-        }
-        return allPlayers.size() + 1; // If not found, rank is last
+        Integer rank = profileRepository.findRankByUserId(userId);
+        return rank != null ? rank : profileRepository.findTopPlayers(PageRequest.of(0, 1)).size() + 1;
     }
 
     private ArenaProfileResponse mapToResponse(UserArenaProfile profile, Integer rank) {
@@ -116,58 +143,112 @@ public class ArenaService {
     }
 
     @Transactional
-    public void recordMatchResult(UUID requestingUserId, com.algobuddy.backend.dto.RecordMatchRequest request) {
-        if (request.getMatchId() != null && !request.getMatchId().isEmpty()) {
-            // Check if match is already recorded to prevent double updates if both clients send the request
-            // Note: Since matchId is stored locally or partially, and we don't have a matchId column in ArenaMatch right now,
-            // we will just proceed. A real robust app would check an indexed matchId column.
-            // For now, we only trigger the API from the winner's side in the frontend to avoid double updates.
+    public void initMatch(UUID requestingUserId, com.algobuddy.backend.dto.InitMatchRequest request) {
+        if (request.getMatchId() == null || request.getMatchId().isEmpty()) {
+            throw new IllegalArgumentException("matchId is required");
         }
-        
-        UUID opponentId = request.getOpponentId();
-        boolean isWinner = request.isWinner();
-        
-        UserArenaProfile p1Profile = profileRepository.findById(requestingUserId).orElseGet(() -> createDefaultProfile(requestingUserId));
-        UserArenaProfile p2Profile = profileRepository.findById(opponentId).orElseGet(() -> createDefaultProfile(opponentId));
 
-        int p1RatingChange = isWinner ? 25 : -15;
-        int p2RatingChange = isWinner ? -15 : 25;
-
-        int p1XpAwarded = isWinner ? 50 : 10;
-        int p2XpAwarded = isWinner ? 10 : 50;
-
-        p1Profile.setRating(Math.max(0, p1Profile.getRating() + p1RatingChange));
-        p1Profile.setXp(p1Profile.getXp() + p1XpAwarded);
-        p1Profile.setLevel((p1Profile.getXp() / 1000) + 1);
-        p1Profile.setTotalProblemsSolved(p1Profile.getTotalProblemsSolved() + (isWinner ? 1 : 0));
-        if (isWinner) p1Profile.setBattlesWon(p1Profile.getBattlesWon() + 1);
-        else p1Profile.setBattlesLost(p1Profile.getBattlesLost() + 1);
-
-        p2Profile.setRating(Math.max(0, p2Profile.getRating() + p2RatingChange));
-        p2Profile.setXp(p2Profile.getXp() + p2XpAwarded);
-        p2Profile.setLevel((p2Profile.getXp() / 1000) + 1);
-        p2Profile.setTotalProblemsSolved(p2Profile.getTotalProblemsSolved() + (!isWinner ? 1 : 0));
-        if (!isWinner) p2Profile.setBattlesWon(p2Profile.getBattlesWon() + 1);
-        else p2Profile.setBattlesLost(p2Profile.getBattlesLost() + 1);
-
-        profileRepository.save(p1Profile);
-        profileRepository.save(p2Profile);
+        if (matchRepository.findByMatchId(request.getMatchId()).isPresent()) {
+            return;
+        }
 
         ArenaMatch match = ArenaMatch.builder()
+                .matchId(request.getMatchId())
                 .player1Id(requestingUserId)
-                .player2Id(opponentId)
-                .winnerId(isWinner ? requestingUserId : opponentId)
+                .player2Id(request.getOpponentId())
                 .topic(request.getTopic() != null ? request.getTopic() : "Arrays")
                 .difficulty(request.getDifficulty() != null ? request.getDifficulty() : "Easy")
-                .startTime(java.time.LocalDateTime.now().minusMinutes(3)) 
-                .endTime(java.time.LocalDateTime.now())
-                .ratingChangeP1(p1RatingChange)
-                .ratingChangeP2(p2RatingChange)
-                .xpAwardedP1(p1XpAwarded)
-                .xpAwardedP2(p2XpAwarded)
+                .startTime(java.time.LocalDateTime.now())
                 .build();
-        
+
         matchRepository.save(match);
+    }
+
+    @Transactional
+    @Caching(evict = {
+        @CacheEvict(value = "arenaProfile", key = "#requestingUserId"),
+        @CacheEvict(value = "arenaProfile", key = "#request.opponentId"),
+        @CacheEvict(value = "arenaLeaderboard", allEntries = true)
+    })
+    public void recordMatchResult(UUID requestingUserId, com.algobuddy.backend.dto.RecordMatchRequest request) {
+        checkMatchResultRateLimit(requestingUserId);
+
+        String matchIdStr = request.getMatchId();
+        if (matchIdStr == null || matchIdStr.isEmpty()) {
+            throw new IllegalArgumentException("matchId is required");
+        }
+
+        ArenaMatch existingMatch = matchRepository.findByMatchId(matchIdStr)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid match ID"));
+
+        if (!existingMatch.getPlayer1Id().equals(requestingUserId) &&
+            !existingMatch.getPlayer2Id().equals(requestingUserId)) {
+            throw new SecurityException("User is not a participant in this match");
+        }
+
+        UUID opponentId = request.getOpponentId();
+        if (!existingMatch.getPlayer1Id().equals(opponentId) &&
+            !existingMatch.getPlayer2Id().equals(opponentId)) {
+            throw new SecurityException("Opponent is not a participant in this match");
+        }
+
+        if (existingMatch.getWinnerId() != null) {
+            throw new IllegalArgumentException("Match result has already been recorded");
+        }
+
+        boolean isWinner = request.isWinner();
+
+        final int MAX_RETRIES = 3;
+        for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                // Deadlock Prevention: Always lock rows in the same order
+                UUID firstId = requestingUserId.compareTo(opponentId) < 0 ? requestingUserId : opponentId;
+                UUID secondId = requestingUserId.compareTo(opponentId) < 0 ? opponentId : requestingUserId;
+
+                UserArenaProfile firstProfile = profileRepository.findById(firstId)
+                        .orElseGet(() -> createDefaultProfile(firstId));
+                UserArenaProfile secondProfile = profileRepository.findById(secondId)
+                        .orElseGet(() -> createDefaultProfile(secondId));
+
+                UserArenaProfile p1Profile = requestingUserId.equals(firstId) ? firstProfile : secondProfile;
+                UserArenaProfile p2Profile = opponentId.equals(firstId) ? firstProfile : secondProfile;
+
+                int p1RatingChange = isWinner ? 25 : -15;
+                int p2RatingChange = isWinner ? -15 : 25;
+
+                int p1XpAwarded = isWinner ? 50 : 10;
+                int p2XpAwarded = isWinner ? 10 : 50;
+
+                p1Profile.setRating(Math.max(0, p1Profile.getRating() + p1RatingChange));
+                p1Profile.setXp(p1Profile.getXp() + p1XpAwarded);
+                p1Profile.setLevel((p1Profile.getXp() / 1000) + 1);
+                p1Profile.setTotalProblemsSolved(p1Profile.getTotalProblemsSolved() + (isWinner ? 1 : 0));
+                if (isWinner) p1Profile.setBattlesWon(p1Profile.getBattlesWon() + 1);
+                else p1Profile.setBattlesLost(p1Profile.getBattlesLost() + 1);
+
+                p2Profile.setRating(Math.max(0, p2Profile.getRating() + p2RatingChange));
+                p2Profile.setXp(p2Profile.getXp() + p2XpAwarded);
+                p2Profile.setLevel((p2Profile.getXp() / 1000) + 1);
+                p2Profile.setTotalProblemsSolved(p2Profile.getTotalProblemsSolved() + (!isWinner ? 1 : 0));
+                if (!isWinner) p2Profile.setBattlesWon(p2Profile.getBattlesWon() + 1);
+                else p2Profile.setBattlesLost(p2Profile.getBattlesLost() + 1);
+
+                profileRepository.save(firstProfile);
+                profileRepository.save(secondProfile);
+
+                existingMatch.setWinnerId(isWinner ? requestingUserId : opponentId);
+                existingMatch.setEndTime(java.time.LocalDateTime.now());
+                matchRepository.save(existingMatch);
+
+                return;
+            } catch (ObjectOptimisticLockingFailureException | DataIntegrityViolationException e) {
+                if (attempt == MAX_RETRIES) {
+                    log.error("Failed to record match result after {} attempts", MAX_RETRIES, e);
+                    throw e;
+                }
+                log.warn("Optimistic lock failure recording match result, retry {}/{}", attempt, MAX_RETRIES);
+            }
+        }
     }
 
     @Transactional(readOnly = true)

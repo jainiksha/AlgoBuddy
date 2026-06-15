@@ -59,6 +59,7 @@ export default function Navbar() {
  
   const { user, setUser } = useUser();
   const userRef = useRef(null);
+  const notificationRef = useRef(null);
 
   useEffect(() => {
     const currentTheme = getStoredTheme();
@@ -100,6 +101,22 @@ export default function Navbar() {
         !userRef.current.contains(e.target)
       ) {
         setUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", fn);
+
+    return () =>
+      document.removeEventListener("mousedown", fn);
+  }, []);
+
+  useEffect(() => {
+    const fn = (e) => {
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(e.target)
+      ) {
+        setNotificationsOpen(false);
       }
     };
 
@@ -209,7 +226,7 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            <div className="relative">
+            <div ref={notificationRef} className="relative">
               <button
                 onClick={() => setNotificationsOpen(!notificationsOpen)}
                 className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-100 dark:hover:bg-udemy-dark-surface"

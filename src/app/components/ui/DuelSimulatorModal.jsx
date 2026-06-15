@@ -53,14 +53,49 @@ export default function DuelSimulatorModal({ isOpen, onClose, opponent, currentU
       : "https://algobuddy-socket-server.onrender.com";
 
     const newSocket = io(socketUrl, {
-      transports: ["websocket", "polling"]
+      transports: ["websocket", "polling"],
+      auth: async (cb) => {
+        try {
+          const { supabase } = await import('@/lib/supabase');
+          const { data: sessionData } = await supabase.auth.getSession();
+          cb({ token: sessionData?.session?.access_token || null });
+        } catch {
+          cb({ token: null });
+        }
+      }
     });
     setSocket(newSocket);
 
     // Join room when connected
-    newSocket.on("connect", () => {
+    newSocket.on("connect", async () => {
       if (opponent?.matchId) {
-         newSocket.emit("join_match", { matchId: opponent.matchId, userId: currentUserStats?.userId });
+         newSocket.emit("join_match", { matchId: opponent.matchId });
+
+         const { supabase } = await import('@/lib/supabase');
+         const { data: sessionData } = await supabase.auth.getSession();
+         const token = sessionData?.session?.access_token;
+         if (token) {
+           const springBootBase = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
+             ? "http://localhost:8080" 
+             : "https://algobuddy-backend-7iwv.onrender.com";
+           try {
+             await fetch(`${springBootBase}/api/v1/arena/match/init`, {
+               method: "POST",
+               headers: {
+                 "Content-Type": "application/json",
+                 Authorization: `Bearer ${token}`
+               },
+               body: JSON.stringify({
+                 matchId: opponent.matchId,
+                 opponentId: opponent.userId,
+                 topic: opponent.topic || "Arrays",
+                 difficulty: "Easy"
+               })
+             });
+           } catch (e) {
+             console.error("Failed to init match:", e);
+           }
+         }
       }
     });
 
@@ -99,7 +134,6 @@ export default function DuelSimulatorModal({ isOpen, onClose, opponent, currentU
     if (socket && opponent?.matchId) {
       socket.emit("code_update", {
         matchId: opponent.matchId,
-        userId: currentUserStats?.userId,
         code: value
       });
     }
@@ -142,8 +176,7 @@ export default function DuelSimulatorModal({ isOpen, onClose, opponent, currentU
     
     if (socket && opponent?.matchId) {
       socket.emit("test_submit", {
-        matchId: opponent.matchId,
-        userId: currentUserStats?.userId
+        matchId: opponent.matchId
       });
       addLog("You started executing code.");
     }
@@ -166,7 +199,6 @@ export default function DuelSimulatorModal({ isOpen, onClose, opponent, currentU
       if (socket && opponent?.matchId) {
         socket.emit("test_result", {
           matchId: opponent.matchId,
-          userId: currentUserStats?.userId,
           status: data.status,
           passed: (data.status === 3 || data.status === "SUCCESS") ? 1 : 0,
           total: 1
@@ -174,8 +206,7 @@ export default function DuelSimulatorModal({ isOpen, onClose, opponent, currentU
 
         if (data.status === 3 || data.status === "SUCCESS") {
           socket.emit("match_complete", {
-            matchId: opponent.matchId,
-            winnerId: currentUserStats?.userId
+            matchId: opponent.matchId
           });
           setBattleFinished(true);
           setVictoryState("victory");
