@@ -1,5 +1,7 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
+import fs from "fs";
+import path from "path";
 import { Redis } from "@upstash/redis";
 import { sanitizeSessionText } from "./sessionTrace.js";
 
@@ -1168,8 +1170,6 @@ export { leaveCollaborationSession };
 
 // Crash-recovery: on graceful shutdown, dump memory sessions to temp file
 if (typeof process !== "undefined" && process.on) {
-  const fs = require("fs");
-  const path = require("path");
 
   function dumpMemorySessions() {
     if (memorySessions.size === 0) return;
