@@ -45,4 +45,4 @@ jobs:
                 cache: maven
 
             - name: Validate Maven POM
-              run: ./mvnw validate --batch-mode
+              run: bash ./mvnw validate --batch-mode
