@@ -179,6 +179,31 @@ export default function ArenaPage() {
 
   // Modals state
   const [matchmakingOpen, setMatchmakingOpen] = useState(false);
+
+  // Fix for browser back button from Matchmaking page (Issue #1333)
+  useEffect(() => {
+    const handlePopState = (e) => {
+      if (matchmakingOpen) {
+        setMatchmakingOpen(false);
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [matchmakingOpen]);
+
+  const openMatchmakingModal = () => {
+    if (!ensureLoggedIn()) return;
+    window.history.pushState({ modal: "matchmaking" }, "", window.location.href);
+    setMatchmakingOpen(true);
+  };
+
+  const closeMatchmakingModal = () => {
+    setMatchmakingOpen(false);
+    if (window.history.state?.modal === "matchmaking") {
+      window.history.back();
+    }
+  };
+
   const [createDuelOpen, setCreateDuelOpen] = useState(false);
   const [duelSimulatorOpen, setDuelSimulatorOpen] = useState(false);
   const [selectedOpponent, setSelectedOpponent] = useState(null);
@@ -217,7 +242,7 @@ export default function ArenaPage() {
 
   const handleMatchFound = (opponent) => {
     setSelectedOpponent(opponent);
-    setMatchmakingOpen(false);
+    closeMatchmakingModal();
     setActiveDuelProblem("Two Sum");
     setDuelSimulatorOpen(true);
   };
@@ -326,8 +351,7 @@ export default function ArenaPage() {
 
               <button
                 onClick={() => {
-                  if (!ensureLoggedIn()) return;
-                  setMatchmakingOpen(true);
+                  openMatchmakingModal();
                 }}
                 className="w-full py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-bold transition shadow-md shadow-primary/10"
               >
@@ -355,8 +379,7 @@ export default function ArenaPage() {
                     <div className="flex flex-wrap gap-3 justify-center md:justify-start">
                       <button
                         onClick={() => {
-                          if (!ensureLoggedIn()) return;
-                          setMatchmakingOpen(true);
+                          openMatchmakingModal();
                         }}
                         className="px-5 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition"
                       >
@@ -670,7 +693,7 @@ export default function ArenaPage() {
 
                 {activeTab === "ranked" && (
                   <button
-                    onClick={() => setMatchmakingOpen(true)}
+                    onClick={() => openMatchmakingModal()}
                     className="px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-bold shadow-md shadow-primary/10 transition"
                   >
                     Launch Ranked Matchmaking
@@ -866,7 +889,7 @@ export default function ArenaPage() {
       {/* ─── Interactive Modals ────────────────────────────────────────────── */}
       <MatchmakingModal
         isOpen={matchmakingOpen}
-        onClose={() => setMatchmakingOpen(false)}
+        onClose={() => closeMatchmakingModal()}
         onMatchFound={handleMatchFound}
         currentUserStats={currentUserStats}
       />

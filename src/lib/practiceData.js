@@ -16,7 +16,7 @@ export const practiceData = [
             name: "Linear Search",
             difficulty: "Easy",
             companies: ["tcs", "infosys", "wipro", "accenture", "amazon", "google"],
-            practiceUrl: "https://leetcode.com/problems/check-if-n-and-its-double-exist/",
+            practiceUrl: "https://leetcode.com/problems/find-numbers-with-even-number-of-digits/",
             visualizerUrl: "/visualizer/array/linearsearch",
             theory: {
               summary: "A simple algorithm that checks every element in the array sequentially until the target is found.",
@@ -216,7 +216,29 @@ export const practiceData = [
               pitfalls: "Attempting to read properties of null (e.g. curr.next when curr is already null).",
               tip: "Always check if the list head is null before starting any linked list operations."
             }
-          }
+          },
+
+          {
+  id: "palindrome-linked-list",
+  name: "Palindrome Linked List",
+  difficulty: "Easy",
+  companies: ["amazon", "microsoft", "google", "meta", "adobe"],
+  practiceUrl: "https://leetcode.com/problems/palindrome-linked-list/",
+  visualizerUrl: null,
+  theory: {
+    summary: "Check if a singly linked list is a palindrome by finding the middle, reversing the second half, and comparing both halves.",
+    steps: [
+      "Find the middle of the linked list using slow and fast pointers.",
+      "Reverse the second half of the list starting from slow pointer.",
+      "Compare values of first half and reversed second half node by node.",
+      "If all values match, return true. Otherwise return false."
+    ],
+    complexity: { time: "O(N)", space: "O(1)" },
+    pitfalls: "Not handling edge cases like empty list or single node list.",
+    tip: "This problem combines two important concepts: finding middle using two pointers and in-place reversal."
+  }
+},
+          
         ]
       },
       {
