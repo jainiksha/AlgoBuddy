@@ -8,7 +8,26 @@ const Redis = require("ioredis");
 const { createAdapter } = require("@socket.io/redis-adapter");
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) {
+      return callback(new Error("Not allowed by CORS"));
+    }
+    const allowed = [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "https://algobuddy.vercel.app",
+      "https://www.algobuddy.me",
+      "https://algobuddy.me"
+    ];
+    if (allowed.includes(origin) || origin.endsWith(".vercel.app")) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ["GET", "POST"],
+}));
 
 const server = http.createServer(app);
 
@@ -21,7 +40,9 @@ const redisClient = pubClient.duplicate();
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
+      if (!origin) {
+        return callback(new Error("Not allowed by CORS"));
+      }
       const allowed = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
