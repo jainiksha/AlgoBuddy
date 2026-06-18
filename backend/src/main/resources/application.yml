@@ -17,6 +17,13 @@ spring:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+
 
 server:
   port: ${PORT:8080}
@@ -26,3 +33,4 @@ supabase:
 
 app:
   allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,https://algobuddy.vercel.app,https://algobuddy.me,https://www.algobuddy.me}
+  trusted-proxies: ${TRUSTED_PROXIES:127.0.0.1,::1,10.0.0.1}
