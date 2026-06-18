@@ -575,7 +575,15 @@ export default function ArenaPage() {
                   {/* Leaderboard Table */}
                   <div className="bg-white dark:bg-neutral-800 border border-slate-100 dark:border-neutral-800/80 rounded-2xl p-5 shadow-sm">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-bold text-slate-800 dark:text-neutral-200">Global Leaderboard</h3>
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-neutral-200">
+                          🏆 Global Learning Leaderboard
+                        </h3>
+
+                        <p className="text-xs text-slate-400 dark:text-neutral-500">
+                          Compete with top learners and improve your rank.
+                        </p>
+                      </div>
                       <span
                         onClick={() => handleTabChange("leaderboard")}
                         className="text-xs text-primary dark:text-purple-400 font-semibold cursor-pointer hover:underline"
@@ -588,8 +596,20 @@ export default function ArenaPage() {
                       {(leaderboard.length > 0 ? leaderboard : LEADERBOARD_ROWS).map((row, idx) => {
                         const rank = row.rank || idx + 1;
                         const name = row.name || (row.userId ? `User ${row.userId.substring(0,4)}` : "Unknown");
+                        const isCurrentUser = name === currentUserStats.name;
                         return (
-                          <div key={rank} className="flex items-center justify-between text-xs px-2 py-1.5 border-b border-slate-50 dark:border-neutral-800 last:border-0">
+                          <div
+                            key={rank}
+                            className={`flex items-center justify-between 
+                            text-xs px-3 py-3 rounded-xl mb-2 transition
+
+                            ${
+                              isCurrentUser
+                              ? "bg-purple-100 dark:bg-purple-900/30 border border-purple-400"
+                              : "hover:bg-slate-50 dark:hover:bg-neutral-900"
+                            }
+                            `}
+                            >
                             <div className="flex items-center gap-3">
                               <span className={`w-5 text-center font-bold ${rank === 1 ? "text-amber-500" : rank === 2 ? "text-slate-400" : "text-slate-500"
                                 }`}>
