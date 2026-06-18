@@ -7,6 +7,7 @@ import { useUser } from "@/features/user/UserContext";
 import { supabase } from "@/lib/supabase";
 import { Search, Moon, Sun, Menu, X, ChevronDown, Swords, LogOut } from "lucide-react";
 import { NAV_LINKS } from "./navLinks";
+import NotificationDropdown from "./notifications/NotificationDropdown";
 
 function getStoredTheme() {
   if (typeof window === "undefined") return "light";
@@ -44,7 +45,6 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [theme, setTheme] = useState("light");
   const [themeMounted, setThemeMounted] = useState(false);
-
   const pathname = usePathname();
   const router = useRouter();
  
@@ -116,6 +116,26 @@ export default function Navbar() {
       );
   }, []);
 
+  useEffect(() => {
+    const handleToggleNotifications = () => {
+      setNotificationsOpen(prev => !prev);
+    };
+    
+    const handleGlobalEscape = () => {
+      setNotificationsOpen(false);
+      setUserMenuOpen(false);
+      setMenuOpen(false);
+    };
+
+    window.addEventListener("toggle-notifications", handleToggleNotifications);
+    window.addEventListener("global-escape", handleGlobalEscape);
+
+    return () => {
+      window.removeEventListener("toggle-notifications", handleToggleNotifications);
+      window.removeEventListener("global-escape", handleGlobalEscape);
+    }
+  }, []);
+
   // FIX: Prevent background scrolling when mobile menu is open
   useEffect(() => {
     if (menuOpen) {
@@ -140,12 +160,12 @@ export default function Navbar() {
       localStorage.removeItem("PROBLEM_BOOKMARKS");
     }
     router.push("/");
-     window.location.href = "/";
+    window.location.href = "/";
     setMenuOpen(false);
   };
 
   const isActive = (href) => {
-     if (!pathname) return false; 
+    if (!pathname) return false;
     if (href.startsWith("http")) return false;
 
     if (href.startsWith("/#")) {
@@ -155,8 +175,6 @@ export default function Navbar() {
     return (
       pathname === href ||
       pathname.startsWith(href + "/")
-
-
     );
   };
 
@@ -187,9 +205,9 @@ export default function Navbar() {
                   href={dynamicHref}
                   data-text={l.label}
                   aria-current={isActive(l.href) ? "page" : undefined}
-                  className={`relative text-[15px] flex flex-col items-center justify-center transition-colors duration-150 focus-ring after:block after:content-[attr(data-text)] after:invisible after:font-semibold after:h-0 after:overflow-hidden ${isActive(l.href)
-                      ? "text-primary dark:text-primary font-semibold"
-                      : "text-surface-600 dark:text-surface-400 font-medium hover:text-surface-900 dark:hover:text-white"
+                  className={`relative pb-2 text-[15px] flex flex-col items-center justify-center border-b-2 transition-colors duration-150 focus-ring ${isActive(l.href)
+                      ? "border-primary text-primary dark:text-primary font-semibold"
+                      : "border-transparent text-surface-600 dark:text-surface-400 font-medium hover:text-surface-900 dark:hover:text-white hover:border-surface-300 dark:hover:border-surface-600"
                     }`}
                 >
                   {l.label}
@@ -202,19 +220,7 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            <button
-              onClick={() => window.dispatchEvent(new CustomEvent("open-command-palette"))}
-              className="flex items-center gap-2.5 h-[38px] px-3.5 rounded-full border border-surface-200 dark:border-surface-700 bg-surface-50 dark:bg-udemy-dark-surface hover:border-primary dark:hover:border-primary transition-all duration-150 focus-ring cursor-pointer group"
-              aria-label="Search site (Ctrl+K)"
-            >
-              <Search className="w-4 h-4 text-surface-500 group-hover:text-primary transition-colors" />
-              <span className="text-[13px] text-surface-500 dark:text-surface-400 font-medium group-hover:text-surface-700 dark:group-hover:text-white transition-colors">
-                Search...
-              </span>
-              <kbd className="inline-flex items-center gap-0.5 text-[9px] font-mono px-1.5 py-0.5 rounded border border-surface-200 dark:border-surface-600 bg-white dark:bg-neutral-800 text-surface-400 dark:text-surface-500 select-none group-hover:border-primary/50 group-hover:text-primary transition-colors">
-                ⌘K
-              </kbd>
-            </button>
+            <NotificationDropdown />
 
             {user ? (
               <div
@@ -252,6 +258,19 @@ export default function Navbar() {
                         {user.email}
                       </p>
                     </div>
+
+                    <ProfileProgress compact={true} />
+
+                    <Link
+                      href="/profile"
+                      onClick={() =>
+                        setUserMenuOpen(false)
+                      }
+                      className="flex items-center gap-2.5 px-4 py-3 text-[14px] font-medium text-surface-900 dark:text-[#f5f5f5] hover:bg-surface-50 dark:hover:bg-udemy-dark-border transition-colors focus-ring border-b border-surface-100 dark:border-udemy-dark-border"
+                    >
+                      <User className="w-4 h-4 text-surface-500" />
+                      Profile
+                    </Link>
 
                     <Link
                       href="/arena"
