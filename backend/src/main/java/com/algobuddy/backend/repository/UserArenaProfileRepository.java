@@ -65,38 +65,4 @@ public interface UserArenaProfileRepository extends JpaRepository<UserArenaProfi
             """, nativeQuery = true)
     Integer findRankByUserId(@Param("userId") UUID userId);
 
-    @Query(value = """
-            SELECT 
-                p.user_id AS "userId",
-                p.xp AS "xp",
-                p.level AS "level",
-                p.rating AS "rating",
-                p.battles_won AS "battlesWon",
-                p.battles_lost AS "battlesLost",
-                p.total_problems_solved AS "totalProblemsSolved",
-                u.name AS "name",
-                u.avatar_url AS "avatarUrl"
-            FROM user_arena_profiles p
-            LEFT JOIN user_profiles u ON p.user_id = u.id
-            WHERE p.user_id = :userId
-            """, nativeQuery = true)
-    Optional<ArenaLeaderboardProjection> findProfileWithUserDetails(@Param("userId") UUID userId);
-
-    @Query(value = """
-            SELECT 
-                p.user_id AS "userId",
-                p.xp AS "xp",
-                p.level AS "level",
-                p.rating AS "rating",
-                p.battles_won AS "battlesWon",
-                p.battles_lost AS "battlesLost",
-                p.total_problems_solved AS "totalProblemsSolved",
-                u.name AS "name",
-                u.avatar_url AS "avatarUrl"
-            FROM user_arena_profiles p
-            LEFT JOIN user_profiles u ON p.user_id = u.id
-            ORDER BY p.rating DESC, p.xp DESC
-            """, nativeQuery = true)
-    List<ArenaLeaderboardProjection> findTopPlayersWithUserDetails(Pageable pageable);
-
 }
