@@ -18,10 +18,21 @@ const ALLOWED_ORIGINS = [
   "https://algobuddy.me"
 ];
 
+function isAllowedVercelOrigin(origin) {
+  try {
+    const url = new URL(origin);
+    const hostname = url.hostname.toLowerCase();
+    return hostname === 'algobuddy.vercel.app' ||
+           hostname.endsWith('.algobuddy.vercel.app');
+  } catch {
+    return false;
+  }
+}
+
 function isOriginAllowed(origin, callback) {
   // Allow requests with no origin (Render health checks, server-to-server)
   if (!origin) return callback(null, true);
-  if (ALLOWED_ORIGINS.includes(origin) || origin.endsWith(".vercel.app")) {
+  if (ALLOWED_ORIGINS.includes(origin) || isAllowedVercelOrigin(origin)) {
     callback(null, true);
   } else {
     callback(new Error("Not allowed by CORS"));
