@@ -5,7 +5,20 @@ import { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useUser } from "@/features/user/UserContext";
 import { supabase } from "@/lib/supabase";
-import { Search, Moon, Sun, Menu, X, ChevronDown, Swords, LogOut, User, LayoutDashboard } from "lucide-react";
+import {
+  Search,
+  Moon,
+  Sun,
+  Menu,
+  X,
+  ChevronDown,
+  Swords,
+  LogOut,
+  Bell,
+  User,
+  LayoutDashboard,
+} from "lucide-react";
+
 import { NAV_LINKS } from "./navLinks";
 import NotificationDropdown from "./notifications/NotificationDropdown";
 import ProfileProgress from "./ui/ProfileProgress";
