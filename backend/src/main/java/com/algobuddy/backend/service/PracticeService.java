@@ -125,28 +125,6 @@ public class PracticeService {
 
     @Transactional
     public void updateStreak(UUID userId) {
-        UserPracticeStats stats = statsRepository.findById(userId)
-                .orElse(new UserPracticeStats(userId, 0, 0, null, 0));
-
-        LocalDate today = LocalDate.now();
-        LocalDate lastActive = stats.getLastActiveDate();
-
-        if (lastActive == null) {
-            stats.setCurrentStreak(1);
-            stats.setLongestStreak(1);
-        } else if (lastActive.equals(today.minusDays(1))) {
-            // Consecutive day
-            stats.setCurrentStreak(stats.getCurrentStreak() + 1);
-            if (stats.getCurrentStreak() > stats.getLongestStreak()) {
-                stats.setLongestStreak(stats.getCurrentStreak());
-            }
-        } else if (!lastActive.equals(today)) {
-            // Streak broken (not today and not yesterday)
-            stats.setCurrentStreak(1);
-        }
-        // If lastActive == today, do nothing (streak already incremented today)
-
-        stats.setLastActiveDate(today);
-        statsRepository.save(stats);
+        statsRepository.upsertStreakAtomic(userId, LocalDate.now());
     }
 }
