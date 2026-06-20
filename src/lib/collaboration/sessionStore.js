@@ -1092,27 +1092,43 @@ export async function getPublicCollaborationSession(sessionId) {
 }
 
 export async function joinCollaborationSession(sessionIdentifier, { password, userId } = {}) {
-  const session = await readSessionByIdentifier(sessionIdentifier);
-  if (!session) {
-    return { error: "Session not found", status: 404 };
-  }
-
-  let newPasswordHash = null;
-  if (session.visibility === "private") {
-    const verification = await verifyPassword(password, session.passwordHash);
-    if (!verification.ok) {
-      return { error: "Invalid session password", status: 403 };
+  // Retry up to 3 times on CONFLICT to handle concurrent session modifications
+  // during password hash migration. The migration write is retried internally
+  // so the user's join succeeds even if another thread wrote to the session
+  // between our read and our atomic join.
+  const MAX_CONFLICT_RETRIES = 3;
+  for (let attempt = 0; attempt < MAX_CONFLICT_RETRIES; attempt++) {
+    const session = await readSessionByIdentifier(sessionIdentifier);
+    if (!session) {
+      return { error: "Session not found", status: 404 };
     }
 
-    if (verification.needsMigration) {
-      newPasswordHash = await hashPassword(password);
-    }
-  }
+    let newPasswordHash = null;
+    if (session.visibility === "private") {
+      const verification = await verifyPassword(password, session.passwordHash);
+      if (!verification.ok) {
+        return { error: "Invalid session password", status: 403 };
+      }
 
-  return issueSubscriptionTokenForParticipant(session.id, userId, {
-    newPasswordHash,
-    expectedUpdatedAt: session.updatedAt,
-  });
+      if (verification.needsMigration) {
+        newPasswordHash = await hashPassword(password);
+      }
+    }
+
+    const result = await issueSubscriptionTokenForParticipant(session.id, userId, {
+      newPasswordHash,
+      // Only pass expectedUpdatedAt when migration is in progress to avoid
+      // spurious conflicts on non-migration joins. Without migration, the join
+      // is purely additive and a retry is harmless, so we skip the check.
+      expectedUpdatedAt: newPasswordHash ? session.updatedAt : null,
+    });
+
+    if (result && result.status === 409 && newPasswordHash && attempt < MAX_CONFLICT_RETRIES - 1) {
+      continue;
+    }
+
+    return result;
+  }
 }
 
 export async function claimSessionPresenter(sessionId, { userId } = {}) {
