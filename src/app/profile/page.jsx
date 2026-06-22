@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import toast from "react-hot-toast";
 import { AnimatePresence, motion } from "framer-motion";
 import {Award,BarChart3,Briefcase,Calendar,CheckCircle2,Code2,Edit3,Eye,Flame,Folder,Github,Linkedin,Link as LinkIcon,MapPin,Medal,Save,  ShieldCheck,Trophy,User,X,} from "lucide-react";
@@ -35,6 +34,8 @@ const heatLevelClass = {
 const AVATAR_BUCKET = "avatars";
 const MAX_AVATAR_FILE_SIZE = 2 * 1024 * 1024;
 const MAX_AVATAR_URL_LENGTH = 512;
+const MAX_PROFILE_URL_LENGTH = 512;
+const PROFILE_URL_FIELDS = ["resume_link", "github_profile", "linkedin_profile"];
 
 const allPracticeProblems = practiceData.flatMap((topic) =>
   topic.subsections.flatMap((section) =>
@@ -69,6 +70,32 @@ const safeAvatarUrl = (value) => {
   if (value.startsWith("data:")) return "";
   if (value.length > MAX_AVATAR_URL_LENGTH) return "";
   return value;
+};
+
+const safeExternalUrl = (value) => {
+  if (typeof value !== "string" || value.length > MAX_PROFILE_URL_LENGTH) return "";
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return "";
+    return parsed.toString();
+  } catch {
+    return "";
+  }
+};
+
+const sanitizeProfileLinks = (data) => {
+  const nextData = { ...data };
+
+  for (const field of PROFILE_URL_FIELDS) {
+    if (!nextData[field]) continue;
+    const safeUrl = safeExternalUrl(nextData[field]);
+    if (!safeUrl) {
+      return { error: "Please enter valid http or https URLs for profile links." };
+    }
+    nextData[field] = safeUrl;
+  }
+
+  return { data: nextData };
 };
 
 function LeetCodeIcon() {
@@ -445,16 +472,23 @@ export default function ProfilePage() {
 
     console.log("Saving:", formData);
 
+    const sanitized = sanitizeProfileLinks(formData);
+    if (sanitized.error) {
+      toast.error(sanitized.error);
+      return;
+    }
+
     setSaving(true);
 
     try {
-      const { data, error } = await supabase.auth.updateUser({ data: formData });
+      const { data, error } = await supabase.auth.updateUser({ data: sanitized.data });
 
       console.log("Updated user:", data?.user?.user_metadata);
 
       if (error) throw error;
 
       setUser(data.user);
+      setFormData(sanitized.data);
       setIsEditOpen(false);
       toast.success("Profile updated successfully");
     } catch (error) {
@@ -555,22 +589,30 @@ export default function ProfilePage() {
                 {bio}
               </p>
 
-              <div className="mt-5 flex gap-3">
-                {[
-                  [Github, formData.github_profile || "#", "GitHub"],
-                  [Linkedin, formData.linkedin_profile || "#", "LinkedIn"],
-                  [LinkIcon, formData.resume_link || "#", "Resume"],
-                ].map(([Icon, href, label]) => (
-                  <Link
-                    key={label}
-                    href={href}
-                    aria-label={label}
-                    className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-[#111331] shadow-sm transition hover:border-violet-200 hover:text-violet-600 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:border-violet-500 dark:hover:text-violet-300"
-                  >
-                    <Icon className="h-4 w-4" />
-                  </Link>
-                ))}
-              </div>
+              {[
+                [Github, safeExternalUrl(formData.github_profile), "GitHub"],
+                [Linkedin, safeExternalUrl(formData.linkedin_profile), "LinkedIn"],
+                [LinkIcon, safeExternalUrl(formData.resume_link), "Resume"],
+              ].some(([, href]) => href) && (
+                <div className="mt-5 flex gap-3">
+                  {[
+                    [Github, safeExternalUrl(formData.github_profile), "GitHub"],
+                    [Linkedin, safeExternalUrl(formData.linkedin_profile), "LinkedIn"],
+                    [LinkIcon, safeExternalUrl(formData.resume_link), "Resume"],
+                  ].filter(([, href]) => href).map(([Icon, href, label]) => (
+                    <a
+                      key={label}
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={label}
+                      className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-[#111331] shadow-sm transition hover:border-violet-200 hover:text-violet-600 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:border-violet-500 dark:hover:text-violet-300"
+                    >
+                      <Icon className="h-4 w-4" />
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
