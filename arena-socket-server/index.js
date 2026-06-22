@@ -626,39 +626,95 @@ io.on("connection", async (socket) => {
   });
 });
 
+async function scanRedisKeys(pattern) {
+  let cursor = '0';
+  const keys = [];
+  do {
+    const result = await redisClient.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+    cursor = result[0];
+    keys.push(...result[1]);
+  } while (cursor !== '0');
+  return keys;
+}
+
+async function getRedisAggregateStats() {
+  let totalKeys = 0;
+  let stringCount = 0;
+  let listCount = 0;
+  let hashCount = 0;
+  let otherCount = 0;
+
+  let cursor = '0';
+  do {
+    const result = await redisClient.scan(cursor, 'MATCH', '*', 'COUNT', 100);
+    cursor = result[0];
+    for (const key of result[1]) {
+      totalKeys++;
+      const type = await redisClient.type(key);
+      if (type === 'string') stringCount++;
+      else if (type === 'list') listCount++;
+      else if (type === 'hash') hashCount++;
+      else otherCount++;
+    }
+  } while (cursor !== '0');
+
+  return { totalKeys, stringCount, listCount, hashCount, otherCount };
+}
+
+// Rate limiter for debug endpoint to prevent brute-force discovery of debug key
+const debugRequestCounts = new Map();
+
+function isDebugRateLimited(ip) {
+  const now = Date.now();
+  const windowMs = 60000;
+  const maxRequests = 5;
+  const entry = debugRequestCounts.get(ip);
+  if (!entry || now > entry.resetTime) {
+    debugRequestCounts.set(ip, { count: 1, resetTime: now + windowMs });
+    return false;
+  }
+  entry.count++;
+  return entry.count > maxRequests;
+}
+
+// Cleanup interval for debug rate limiter
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of debugRequestCounts.entries()) {
+    if (now > entry.resetTime) {
+      debugRequestCounts.delete(ip);
+    }
+  }
+}, 60000);
+
 app.get("/debug", async (req, res) => {
   try {
-    const keys = await redisClient.keys('*');
-    const dbContent = {};
-    for (const key of keys) {
-      const type = await redisClient.type(key);
-      if (type === 'string') {
-        dbContent[key] = await redisClient.get(key);
-      } else if (type === 'list') {
-        dbContent[key] = await redisClient.lrange(key, 0, -1);
-      } else if (type === 'hash') {
-        dbContent[key] = await redisClient.hgetall(key);
-      } else {
-        dbContent[key] = `[type: ${type}]`;
-      }
+    const debugEnabled = process.env.DEBUG_ENABLED === 'true';
+    if (!debugEnabled) {
+      return res.status(404).json({ error: "Not found" });
     }
-    const activeSockets = [];
-    for (const [id, s] of io.sockets.sockets.entries()) {
-      activeSockets.push({
-        socketId: id,
-        userId: s.data?.userId,
-        connected: s.connected
-      });
+
+    const debugKey = process.env.DEBUG_KEY;
+    const providedKey = req.headers['x-debug-key'];
+    if (debugKey && providedKey !== debugKey) {
+      return res.status(403).json({ error: "Forbidden" });
     }
+
+    const clientIp = req.ip || req.connection.remoteAddress;
+    if (isDebugRateLimited(clientIp)) {
+      return res.status(429).json({ error: "Too many requests" });
+    }
+
+    const stats = await getRedisAggregateStats();
+
     res.json({
-      status: "Redis debug info",
+      status: "debug info",
+      redis: stats,
       activeConnections: io.engine.clientsCount,
-      activeSockets: activeSockets,
-      redisKeys: keys,
-      redisContent: dbContent
+      uptime: process.uptime(),
     });
   } catch (err) {
-    res.json({ error: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 
