@@ -65,6 +65,24 @@ export default function SmartRevisionFlashcards() {
   const [weakTopics, setWeakTopics] = useState([]);
   const [recommendedDifficulty, setRecommendedDifficulty] = useState("Easy");
 
+  const toggleFavorite = () => {
+  const currentCard = currentCards[index];
+
+  const exists = favorites.find(
+    (card) => card.question === currentCard.question
+  );
+
+  if (exists) {
+    setFavorites(
+      favorites.filter(
+        (card) => card.question !== currentCard.question
+      )
+    );
+  } else {
+    setFavorites([...favorites, currentCard]);
+  }
+};
+
   const topics = [
   "All",
   "Array",
@@ -312,6 +330,15 @@ setHistory((prev) => [
       {personalBest}
     </p>
   </div>
+  <div className="bg-slate-800 p-3 rounded">
+  <p className="text-xs text-gray-400">
+    Favorites
+  </p>
+
+  <p className="text-xl font-bold text-yellow-400">
+    {favorites.length}
+  </p>
+</div>
 </div>
 
       <div
@@ -332,9 +359,21 @@ setHistory((prev) => [
     text-center
   "
 >
-  <h3 className="text-lg font-bold mb-3">
+  <div className="flex justify-between items-center w-full mb-3">
+  <h3 className="text-lg font-bold">
     {currentCards[index].topic}
   </h3>
+
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      toggleFavorite();
+    }}
+    className="text-yellow-400 text-xl"
+  >
+    ⭐
+  </button>
+</div>
 
   {!showAnswer ? (
     <>
@@ -515,6 +554,33 @@ setHistory((prev) => [
     .map((topic, idx) => (
       <p key={idx}>🔹 {topic}</p>
     ))}
+</div>
+
+<div className="mt-5 bg-slate-800 p-4 rounded-lg">
+  <h3 className="font-bold text-lg mb-3">
+    ⭐ Favorite Flashcards
+  </h3>
+
+  {favorites.length === 0 ? (
+    <p className="text-gray-400">
+      No bookmarked flashcards yet.
+    </p>
+  ) : (
+    favorites.map((card, idx) => (
+      <div
+        key={idx}
+        className="mb-3 p-3 bg-slate-700 rounded"
+      >
+        <p className="text-purple-300 font-semibold">
+          {card.topic}
+        </p>
+
+        <p className="text-white">
+          {card.question}
+        </p>
+      </div>
+    ))
+  )}
 </div>
 
 <div className="mt-5 flex gap-3">
