@@ -69,6 +69,7 @@ export default function SmartRevisionFlashcards() {
   const [incorrectAnswers, setIncorrectAnswers] = useState(0);
   const [sessionStartTime] = useState(Date.now());
   const [showSummary, setShowSummary] = useState(false);
+  const [badges, setBadges] = useState([]);
 
   const toggleFavorite = () => {
   const currentCard = currentCards[index];
@@ -148,6 +149,14 @@ useEffect(() => {
   hardCompleted,
 ]);
 
+useEffect(() => {
+  checkAchievements();
+}, [
+  streak,
+  completedCards,
+  hardCompleted,
+]);
+
       if (currentCards.length === 0) {
   return (
     <div className="bg-slate-900 text-white p-6 rounded-xl shadow-lg max-w-xl mx-auto">
@@ -188,6 +197,32 @@ const generateAIRecommendations = () => {
   } else {
     setRecommendedDifficulty("Easy");
   }
+};
+
+const checkAchievements = () => {
+  const earnedBadges = [];
+
+  if (streak >= 3) {
+    earnedBadges.push("🔥 3-Day Revision Streak");
+  }
+
+  if (streak >= 7) {
+    earnedBadges.push("🚀 7-Day Revision Streak");
+  }
+
+  if (streak >= 30) {
+    earnedBadges.push("👑 30-Day Revision Master");
+  }
+
+  if (completedCards >= 100) {
+    earnedBadges.push("🏆 100 Flashcards Completed");
+  }
+
+  if (hardCompleted >= 25) {
+    earnedBadges.push("💎 Hard Difficulty Expert");
+  }
+
+  setBadges(earnedBadges);
 };
 
 const totalCards =
@@ -534,6 +569,29 @@ const timeSpent = Math.floor(
   <p className="mt-3 text-purple-400">
     AI Suggestion: Focus on weaker topics first.
   </p>
+</div>
+
+<div className="mt-5 bg-slate-800 p-4 rounded-lg">
+  <h3 className="font-bold text-lg mb-3">
+    🏅 Achievement Badges
+  </h3>
+
+  {badges.length > 0 ? (
+    <div className="flex flex-wrap gap-2">
+      {badges.map((badge, idx) => (
+        <span
+          key={idx}
+          className="px-3 py-2 bg-yellow-600 rounded-full text-sm"
+        >
+          {badge}
+        </span>
+      ))}
+    </div>
+  ) : (
+    <p className="text-gray-400">
+      No badges earned yet.
+    </p>
+  )}
 </div>
 
 <div className="mt-4">
