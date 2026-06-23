@@ -64,6 +64,11 @@ export default function SmartRevisionFlashcards() {
   const [sortOption, setSortOption] = useState("default");
   const [weakTopics, setWeakTopics] = useState([]);
   const [recommendedDifficulty, setRecommendedDifficulty] = useState("Easy");
+  const [favorites, setFavorites] = useState([]);
+  const [correctAnswers, setCorrectAnswers] = useState(0);
+  const [incorrectAnswers, setIncorrectAnswers] = useState(0);
+  const [sessionStartTime] = useState(Date.now());
+  const [showSummary, setShowSummary] = useState(false);
 
   const toggleFavorite = () => {
   const currentCard = currentCards[index];
@@ -235,6 +240,21 @@ setHistory((prev) => [
   setIndex((index - 1 + currentCards.length) % currentCards.length);
   setShowAnswer(false);
 };
+
+const attemptedQuestions =
+  correctAnswers + incorrectAnswers;
+
+const accuracy =
+  attemptedQuestions === 0
+    ? 0
+    : (
+        (correctAnswers / attemptedQuestions) *
+        100
+      ).toFixed(1);
+
+const timeSpent = Math.floor(
+  (Date.now() - sessionStartTime) / 1000
+);
 
   return (
     <div className="bg-slate-900 text-white p-6 rounded-xl shadow-lg max-w-xl mx-auto">
@@ -585,6 +605,28 @@ setHistory((prev) => [
 
 <div className="mt-5 flex gap-3">
   <button
+    onClick={() => {
+      setCorrectAnswers((prev) => prev + 1);
+      nextCard();
+    }}
+    className="w-1/2 px-4 py-2 bg-green-600 rounded hover:bg-green-700"
+  >
+    ✅ Correct
+  </button>
+
+  <button
+    onClick={() => {
+      setIncorrectAnswers((prev) => prev + 1);
+      nextCard();
+    }}
+    className="w-1/2 px-4 py-2 bg-red-600 rounded hover:bg-red-700"
+  >
+    ❌ Incorrect
+  </button>
+</div>
+
+<div className="mt-5 flex gap-3">
+  <button
     onClick={previousCard}
     className="w-1/2 px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
   >
@@ -598,6 +640,54 @@ setHistory((prev) => [
     Next
   </button>
 </div>
+<button
+  onClick={() => setShowSummary(true)}
+  className="mt-4 w-full px-4 py-2 bg-purple-600 rounded hover:bg-purple-700"
+>
+  📊 View Session Report
+</button>
+
+{showSummary && (
+  <div className="mt-6 bg-slate-800 p-5 rounded-lg">
+    <h3 className="text-xl font-bold mb-4">
+      📊 Revision Session Summary
+    </h3>
+
+    <p>
+      Questions Attempted: {attemptedQuestions}
+    </p>
+
+    <p>
+      Correct Answers: {correctAnswers}
+    </p>
+
+    <p>
+      Incorrect Answers: {incorrectAnswers}
+    </p>
+
+    <p>
+      Accuracy: {accuracy}%
+    </p>
+
+    <p>
+      Time Spent: {timeSpent} seconds
+    </p>
+
+    <p className="mt-3 text-yellow-400">
+      Suggested Improvement Areas:
+    </p>
+
+    <ul className="text-sm text-gray-300">
+      {weakTopics.length > 0 ? (
+        weakTopics.map((topic, idx) => (
+          <li key={idx}>📌 {topic}</li>
+        ))
+      ) : (
+        <li>No weak topics detected.</li>
+      )}
+    </ul>
+  </div>
+)}
 
       <div className="mt-4 text-sm text-gray-400">
         Progress: {index + 1}/{currentCards.length} cards completed
