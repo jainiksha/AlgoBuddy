@@ -498,18 +498,18 @@ io.on("connection", async (socket) => {
   });
 
   // Duel Room Events
-  socket.on("code_update", async (data) => {
+  socket.on("typing_status", async (data) => {
     try {
       if (await isRateLimited(socket.data.userId)) return;
       const matchId = await redisClient.hget(`{arena}:socket:${socket.id}`, "matchId");
       if (!matchId || matchId !== data.matchId) return;
 
-      socket.to(data.matchId).emit("opponent_code_update", {
-        code: data.code,
+      socket.to(data.matchId).emit("opponent_typing_status", {
+        isTyping: data.isTyping,
         userId: socket.data.userId
       });
     } catch (error) {
-      console.error(`[code_update] Error for user ${socket.data.userId}:`, error);
+      console.error(`[typing_status] Error for user ${socket.data.userId}:`, error);
     }
   });
 
