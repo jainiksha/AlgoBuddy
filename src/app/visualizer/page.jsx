@@ -7,7 +7,6 @@ import QueueModal from "@/app/components/models/QueueModal";
 import LinkedListModal from "@/app/components/models/LinkedListModal";
 import TreeModal from "@/app/components/models/TreeModal";
 import GraphModal from "@/app/components/models/GraphModal";
-import TutorialOverlay from "@/app/components/ui/TutorialOverlay";
 import BackToTop from "../components/ui/backtotop";
 import BookmarkSection from "@/app/components/ui/BookmarkSection";
 
@@ -905,8 +904,6 @@ const Visualizer = () => {
       className="min-h-screen bg-white dark:bg-[#1c1d1f] text-gray-800 dark:text-gray-200 flex flex-col"
       style={{ fontFamily: "'Inter', 'Source Sans 3', sans-serif" }}
     >
-      <TutorialOverlay />
-
       <VisualizerClient initialSections={clientSections} />
 
       <div className="w-full relative">
