@@ -13,7 +13,7 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getAuthenticatedUser } from "@/lib/auth";
-import { checkRateLimit } from "@/lib/rateLimit";
+import { checkChatbotRateLimit } from "@/lib/rateLimit";
 import { getClientIp } from "@/lib/getClientIp";
 import { jsonResponse } from "@/lib/serverApi";
 
@@ -54,7 +54,7 @@ AlgoBuddy is a completely FREE open-source platform (no paid plans, no ads). Exp
   - Editorial solutions for learning the optimal approach
   - Problems tagged by topic (Arrays, Trees, DP, Graphs, etc.)
 
-### 📊 Progress Dashboard
+### 📊 Profile Progress
 - **What it is (simple):** Your personal report card and learning map.
 - **Features:**
   - Track every problem you've solved
@@ -233,7 +233,7 @@ export async function POST(request) {
   const authResult = await getAuthenticatedUser().catch(() => ({ success: false }));
 
   const ip = getClientIp(request.headers);
-  const { allowed, resetAt } = await checkRateLimit(`chatbot:${ip}`);
+  const { allowed, resetAt } = await checkChatbotRateLimit(`chatbot:${ip}`);
   if (!allowed) {
     const retryAfter = Math.ceil((resetAt - Date.now()) / 1000);
     return jsonResponse({ error: "Too many requests. Please try again later." }, 429, {
