@@ -219,11 +219,14 @@ export default function ArenaPage() {
     setDuelSimulatorOpen(true);
   };
 
-  const handleWatchLive = (p1, p2, topic) => {
-    setSelectedOpponent({ name: p2, rating: 2100, level: 15, avatar: p2.slice(0, 2).toUpperCase() });
-    setActiveDuelProblem(topic);
-    setDuelSimulatorOpen(true);
+  const handleWatchLive = (matchData) => {
+    // Let's store it in state so we can pass it to the SpectatorModal
+    setSpectatingMatch(matchData);
+    setSpectatorModalOpen(true);
   };
+
+  const [spectatorModalOpen, setSpectatorModalOpen] = useState(false);
+  const [spectatingMatch, setSpectatingMatch] = useState(null);
 
   const handleCreateMatchLaunch = (matchConfig) => {
     setCreateDuelOpen(false);
