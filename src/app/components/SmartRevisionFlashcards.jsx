@@ -8,11 +8,15 @@ const flashcards = {
       topic: "Array",
       question: "What is an Array?",
       answer: "A collection of elements stored in contiguous memory.",
+      explanation:
+        "Arrays store elements sequentially in memory, allowing direct access using indexes in O(1) time."
     },
     {
       topic: "Stack",
       question: "Which principle does Stack follow?",
       answer: "LIFO (Last In First Out).",
+      explanation:
+        "The last element inserted into the stack is the first one removed."
     },
   ],
 
@@ -21,11 +25,15 @@ const flashcards = {
       topic: "Binary Search",
       question: "What is the time complexity of Binary Search?",
       answer: "O(log n)",
+      explanation:
+        "Binary Search repeatedly divides the search space into two halves."
     },
     {
       topic: "Merge Sort",
       question: "What is the average time complexity of Merge Sort?",
       answer: "O(n log n)",
+      explanation:
+        "Merge Sort uses divide and conquer and merges sorted subarrays."
     },
   ],
 
@@ -34,11 +42,15 @@ const flashcards = {
       topic: "AVL Tree",
       question: "What is the purpose of AVL Tree rotations?",
       answer: "To keep the tree balanced after insertions and deletions.",
+      explanation:
+        "Rotations maintain balance factors and keep operations O(log n)."
     },
     {
       topic: "Dynamic Programming",
       question: "What is memoization?",
       answer: "Storing results of expensive computations to avoid recalculation.",
+      explanation:
+        "Memoization saves previously computed results to avoid repeated work."
     },
   ],
 };
@@ -64,6 +76,30 @@ export default function SmartRevisionFlashcards() {
   const [sortOption, setSortOption] = useState("default");
   const [weakTopics, setWeakTopics] = useState([]);
   const [recommendedDifficulty, setRecommendedDifficulty] = useState("Easy");
+  const [favorites, setFavorites] = useState([]);
+  const [correctAnswers, setCorrectAnswers] = useState(0);
+  const [incorrectAnswers, setIncorrectAnswers] = useState(0);
+  const [sessionStartTime] = useState(Date.now());
+  const [showSummary, setShowSummary] = useState(false);
+  const [badges, setBadges] = useState([]);
+
+  const toggleFavorite = () => {
+  const currentCard = currentCards[index];
+
+  const exists = favorites.find(
+    (card) => card.question === currentCard.question
+  );
+
+  if (exists) {
+    setFavorites(
+      favorites.filter(
+        (card) => card.question !== currentCard.question
+      )
+    );
+  } else {
+    setFavorites([...favorites, currentCard]);
+  }
+};
 
   const topics = [
   "All",
@@ -125,6 +161,14 @@ useEffect(() => {
   hardCompleted,
 ]);
 
+useEffect(() => {
+  checkAchievements();
+}, [
+  streak,
+  completedCards,
+  hardCompleted,
+]);
+
       if (currentCards.length === 0) {
   return (
     <div className="bg-slate-900 text-white p-6 rounded-xl shadow-lg max-w-xl mx-auto">
@@ -165,6 +209,32 @@ const generateAIRecommendations = () => {
   } else {
     setRecommendedDifficulty("Easy");
   }
+};
+
+const checkAchievements = () => {
+  const earnedBadges = [];
+
+  if (streak >= 3) {
+    earnedBadges.push("🔥 3-Day Revision Streak");
+  }
+
+  if (streak >= 7) {
+    earnedBadges.push("🚀 7-Day Revision Streak");
+  }
+
+  if (streak >= 30) {
+    earnedBadges.push("👑 30-Day Revision Master");
+  }
+
+  if (completedCards >= 100) {
+    earnedBadges.push("🏆 100 Flashcards Completed");
+  }
+
+  if (hardCompleted >= 25) {
+    earnedBadges.push("💎 Hard Difficulty Expert");
+  }
+
+  setBadges(earnedBadges);
 };
 
 const totalCards =
@@ -217,6 +287,21 @@ setHistory((prev) => [
   setIndex((index - 1 + currentCards.length) % currentCards.length);
   setShowAnswer(false);
 };
+
+const attemptedQuestions =
+  correctAnswers + incorrectAnswers;
+
+const accuracy =
+  attemptedQuestions === 0
+    ? 0
+    : (
+        (correctAnswers / attemptedQuestions) *
+        100
+      ).toFixed(1);
+
+const timeSpent = Math.floor(
+  (Date.now() - sessionStartTime) / 1000
+);
 
   return (
     <div className="bg-slate-900 text-white p-6 rounded-xl shadow-lg max-w-xl mx-auto">
@@ -312,29 +397,55 @@ setHistory((prev) => [
       {personalBest}
     </p>
   </div>
+  <div className="bg-slate-800 p-3 rounded">
+  <p className="text-xs text-gray-400">
+    Favorites
+  </p>
+
+  <p className="text-xl font-bold text-yellow-400">
+    {favorites.length}
+  </p>
+</div>
 </div>
 
       <div
-  onClick={() => setShowAnswer(!showAnswer)}
-  className="
-    bg-slate-800
-    p-5
-    rounded-lg
-    min-h-[180px]
-    cursor-pointer
-    transition-all
-    duration-500
-    hover:scale-105
-    flex
-    flex-col
-    justify-center
-    items-center
-    text-center
-  "
->
-  <h3 className="text-lg font-bold mb-3">
+        onClick={() => setShowAnswer(!showAnswer)}
+        className={`
+          bg-slate-800
+          p-5
+          rounded-lg
+          min-h-[180px]
+          cursor-pointer
+          transition-all
+          duration-500
+          hover:scale-105
+          flex
+          flex-col
+          justify-center
+          items-center
+          text-center
+          ${showAnswer ? "scale-105 shadow-lg" : ""}
+        `}
+      >
+  <div className="flex justify-between items-center w-full mb-3">
+  <h3 className="text-lg font-bold">
     {currentCards[index].topic}
   </h3>
+
+  <p className="text-xs text-gray-400">
+    Card {index + 1} of {currentCards.length}
+  </p>
+
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      toggleFavorite();
+    }}
+    className="text-yellow-400 text-xl"
+  >
+    ⭐
+  </button>
+</div>
 
   {!showAnswer ? (
     <>
@@ -347,16 +458,26 @@ setHistory((prev) => [
       </p>
     </>
   ) : (
-    <>
-      <p className="text-green-400 text-lg font-semibold">
-        {currentCards[index].answer}
-      </p>
+  <>
+    <p className="text-green-400 text-lg font-semibold">
+      {currentCards[index].answer}
+    </p>
 
-      <p className="mt-4 text-sm text-gray-400">
-        Click card to see question
+    <div className="mt-4 p-3 bg-slate-700 rounded-lg">
+      <h4 className="font-semibold text-purple-300 mb-2">
+        Detailed Explanation
+      </h4>
+
+      <p className="text-sm text-gray-200">
+        {currentCards[index].explanation}
       </p>
-    </>
-  )}
+    </div>
+
+    <p className="mt-4 text-sm text-gray-400">
+      Click card to see question
+    </p>
+  </>
+)}
 </div>
 
 <div className="mt-5">
@@ -477,6 +598,29 @@ setHistory((prev) => [
   </p>
 </div>
 
+<div className="mt-5 bg-slate-800 p-4 rounded-lg">
+  <h3 className="font-bold text-lg mb-3">
+    🏅 Achievement Badges
+  </h3>
+
+  {badges.length > 0 ? (
+    <div className="flex flex-wrap gap-2">
+      {badges.map((badge, idx) => (
+        <span
+          key={idx}
+          className="px-3 py-2 bg-yellow-600 rounded-full text-sm"
+        >
+          {badge}
+        </span>
+      ))}
+    </div>
+  ) : (
+    <p className="text-gray-400">
+      No badges earned yet.
+    </p>
+  )}
+</div>
+
 <div className="mt-4">
   <div className="flex justify-between text-sm mb-1">
     <span>Overall Progress</span>
@@ -517,6 +661,55 @@ setHistory((prev) => [
     ))}
 </div>
 
+<div className="mt-5 bg-slate-800 p-4 rounded-lg">
+  <h3 className="font-bold text-lg mb-3">
+    ⭐ Favorite Flashcards
+  </h3>
+
+  {favorites.length === 0 ? (
+    <p className="text-gray-400">
+      No bookmarked flashcards yet.
+    </p>
+  ) : (
+    favorites.map((card, idx) => (
+      <div
+        key={idx}
+        className="mb-3 p-3 bg-slate-700 rounded"
+      >
+        <p className="text-purple-300 font-semibold">
+          {card.topic}
+        </p>
+
+        <p className="text-white">
+          {card.question}
+        </p>
+      </div>
+    ))
+  )}
+</div>
+
+<div className="mt-5 flex gap-3">
+  <button
+    onClick={() => {
+      setCorrectAnswers((prev) => prev + 1);
+      nextCard();
+    }}
+    className="w-1/2 px-4 py-2 bg-green-600 rounded hover:bg-green-700"
+  >
+    ✅ Correct
+  </button>
+
+  <button
+    onClick={() => {
+      setIncorrectAnswers((prev) => prev + 1);
+      nextCard();
+    }}
+    className="w-1/2 px-4 py-2 bg-red-600 rounded hover:bg-red-700"
+  >
+    ❌ Incorrect
+  </button>
+</div>
+
 <div className="mt-5 flex gap-3">
   <button
     onClick={previousCard}
@@ -532,9 +725,59 @@ setHistory((prev) => [
     Next
   </button>
 </div>
+<button
+  onClick={() => setShowSummary(true)}
+  className="mt-4 w-full px-4 py-2 bg-purple-600 rounded hover:bg-purple-700"
+>
+  📊 View Session Report
+</button>
+
+{showSummary && (
+  <div className="mt-6 bg-slate-800 p-5 rounded-lg">
+    <h3 className="text-xl font-bold mb-4">
+      📊 Revision Session Summary
+    </h3>
+
+    <p>
+      Questions Attempted: {attemptedQuestions}
+    </p>
+
+    <p>
+      Correct Answers: {correctAnswers}
+    </p>
+
+    <p>
+      Incorrect Answers: {incorrectAnswers}
+    </p>
+
+    <p>
+      Accuracy: {accuracy}%
+    </p>
+
+    <p>
+      Time Spent: {timeSpent} seconds
+    </p>
+
+    <p className="mt-3 text-yellow-400">
+      Suggested Improvement Areas:
+    </p>
+
+    <ul className="text-sm text-gray-300">
+      {weakTopics.length > 0 ? (
+        weakTopics.map((topic, idx) => (
+          <li key={idx}>📌 {topic}</li>
+        ))
+      ) : (
+        <li>No weak topics detected.</li>
+      )}
+    </ul>
+  </div>
+)}
 
       <div className="mt-4 text-sm text-gray-400">
         Progress: {index + 1}/{currentCards.length} cards completed
+        {" • "}
+        {Math.round(((index + 1) / currentCards.length) * 100)}%
       </div>
     </div>
   );

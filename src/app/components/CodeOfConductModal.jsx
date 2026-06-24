@@ -114,9 +114,9 @@ const CodeOfConductModal = ({ isOpen, onClose }) => {
             <ul>
               {codeOfConductSections.map((item, index) => (
                 <li key={index} className="mb-4">
-                  <div className="rounded-xl border border-[#2A2A35] bg-[#14141A] p-5 transition-all duration-300 hover:border-purple-500/40">
+                  <div className="rounded-xl border border-[#2A2A35] bg-[#14141A] p-5 transition-all duration-300 hover:border-gray-400/40">
                     <div className="flex items-start">
-                      <span className="mr-3 mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-purple-500/15 font-semibold text-purple-400">
+                      <span className="mr-3 mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 font-semibold text-gray-400">
                         {item.id}
                       </span>
 
@@ -148,7 +148,7 @@ const CodeOfConductModal = ({ isOpen, onClose }) => {
                       <div className="mt-2 pl-9">
                         <a
                           href={`mailto:${item.contact}`}
-                          className="font-medium text-purple-400 hover:text-purple-300 hover:underline"
+                          className="font-medium text-gray-400 hover:text-gray-300 hover:underline"
                         >
                           {item.contact}
                         </a>

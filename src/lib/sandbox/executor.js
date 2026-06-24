@@ -1,3 +1,5 @@
+"use strict";
+
 const vm = require("vm");
 const { EXECUTION_STATUS } = require("./errorCodes");
 const { MAX_TIMEOUT_MS, MAX_MEMORY_MB, MAX_OUTPUT_LENGTH } = require("./sandbox.config");

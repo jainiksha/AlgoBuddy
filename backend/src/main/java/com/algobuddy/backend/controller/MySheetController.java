@@ -77,6 +77,7 @@ public class MySheetController {
         List<MySheet> items = mySheetService.getSharedSheet(userId);
         List<MySheetDto> dtos = items.stream()
                 .map(mySheetMapper::toDto)
+                .peek(dto -> { if (!dto.isSharedNotes()) dto.setNote(null); })
                 .collect(Collectors.toList());
         return ResponseEntity.ok(MySheetResponseDto.builder().items(dtos).build());
     }

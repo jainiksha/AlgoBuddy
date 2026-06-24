@@ -470,7 +470,8 @@ async function readSession(sessionId) {
         session = memorySessions.get(sessionId) || null;
       }
     } else {
-      session = memorySessions.get(sessionId) || null;
+      const stored = memorySessions.get(sessionId);
+      session = stored ? { ...stored } : null;
     }
 
     if (session && Array.isArray(session.subscriptionTokens) && session.subscriptionTokens.length > 0) {
@@ -555,7 +556,7 @@ async function writeSession(session, { expectedUpdatedAt } = {}) {
         if (memorySessions.size >= MAX_MEMORY_SESSIONS) {
           enforceMemorySessionCapacity();
         }
-        memorySessions.set(nextSession.id, nextSession);
+        memorySessions.set(nextSession.id, { ...nextSession });
         touchMemorySession(nextSession.id);
         memoryWriteCount++;
         console.warn(`[sessionStore] Session ${nextSession.id} written to memory fallback. Total memory writes: ${memoryWriteCount}`);
@@ -566,7 +567,7 @@ async function writeSession(session, { expectedUpdatedAt } = {}) {
       if (memorySessions.size >= MAX_MEMORY_SESSIONS) {
         enforceMemorySessionCapacity();
       }
-      memorySessions.set(nextSession.id, nextSession);
+      memorySessions.set(nextSession.id, { ...nextSession });
       touchMemorySession(nextSession.id);
       memoryWriteCount++;
       console.warn(`[sessionStore] Session ${nextSession.id} written to memory fallback. Total memory writes: ${memoryWriteCount}`);

@@ -13,7 +13,8 @@ import {
   GraduationCap, 
   Flame, 
   ScrollText,
-  ChevronRight 
+  ChevronRight,
+  NotebookPen
 } from "lucide-react";
 
 export default function PracticeSidebar({ 
@@ -39,6 +40,7 @@ export default function PracticeSidebar({
     { id: "company-wise", label: "Company-wise", icon: Building2 },
     { id: "bookmarks",    label: "Bookmarks",    icon: Bookmark },
     { id: "recent-solved",label: "Recent Solved",icon: History },
+    { id: "notes",        label: "Notebook",     icon: NotebookPen },
   ];
 
   const dailyGoalPercentage = Math.min(100, Math.round((dailySolved / dailyGoal) * 100) || 0);

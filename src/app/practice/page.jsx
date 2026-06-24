@@ -22,6 +22,7 @@ import PracticeSidebar from "@/app/components/practice/PracticeSidebar";
 import PracticeRightSidebar from "@/app/components/practice/PracticeRightSidebar";
 import PracticeSessionBanner from "@/app/components/practice/PracticeSessionBanner";
 import PracticeDashboard from "@/app/components/practice/PracticeDashboard";
+import PracticeNotebook from "@/app/components/practice/PracticeNotebook";
 import CompanyLogos from "@/app/components/practice/CompanyLogos";
 import TheoryDrawer from "@/app/components/practice/TheoryDrawer";
 import BackToTop from "@/app/components/ui/backtotop";
@@ -1322,6 +1323,8 @@ export default function PracticePage() {
                 })()
               )}
             </section>
+          ) : activeView === "notes" ? (
+            <PracticeNotebook />
           ) : (
             /* Company-wise View */
             <div className="space-y-6">

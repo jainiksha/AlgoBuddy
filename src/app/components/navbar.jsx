@@ -12,10 +12,10 @@ import {
   Menu,
   X,
   ChevronDown,
+  ArrowRight,
   Swords,
   LogOut,
   Bell,
-  User,
 } from "lucide-react";
 
 import { NAV_LINKS } from "./navLinks";
@@ -74,6 +74,7 @@ export default function Navbar() {
   const avatarSrc = safeAvatarUrl(
     user?.user_metadata?.avatar_url || user?.user_metadata?.picture
   );
+  const displayName = user?.user_metadata?.name || "AlgoBuddy User";
 
   useEffect(() => {
     const currentTheme = getStoredTheme();
@@ -255,7 +256,9 @@ export default function Navbar() {
                   onClick={() =>
                     setUserMenuOpen((o) => !o)
                   }
-                  className="flex items-center gap-2 rounded-full px-3 py-1.5 border border-surface-200 dark:border-surface-700 hover:border-primary transition-colors focus-ring"
+                  className="flex items-center gap-2 rounded-full px-2 py-1.5 text-surface-700 dark:text-surface-200 hover:text-primary dark:hover:text-primary-light hover:bg-surface-100 dark:hover:bg-udemy-dark-surface transition-colors focus-ring"
+                  aria-label="Open account menu"
+                  aria-expanded={userMenuOpen}
                 >
                   {avatarSrc ? (
                     <Image
@@ -268,16 +271,26 @@ export default function Navbar() {
                     />
                   ) : (
                     <div className="w-7 h-7 rounded-full bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-light flex items-center justify-center text-[11px] font-bold">
-                      {getInitials(user.user_metadata?.name || user.email)}
+                      {getInitials(displayName || user.email)}
                     </div>
                   )}
 
+                  <span className="max-w-28 truncate text-sm font-semibold">
+                    {displayName}
+                  </span>
                   <ChevronDown className="w-3.5 h-3.5 text-surface-500" />
                 </button>
 
                 {userMenuOpen && (
                   <div className="absolute right-0 top-[calc(100%+8px)] w-64 bg-white/95 dark:bg-udemy-dark-surface/95 backdrop-blur-md border border-surface-200/80 dark:border-surface-700/80 shadow-elevated rounded-2xl z-[9999] overflow-hidden transition-all duration-200 ease-out origin-top-right">
-                    <div className="px-4 py-3.5 border-b border-surface-100 dark:border-udemy-dark-border bg-surface-50/50 dark:bg-neutral-900/30 flex items-center gap-3">
+                    <Link
+                      href="/profile"
+                      onClick={() =>
+                        setUserMenuOpen(false)
+                      }
+                      className="group mx-2 mt-2 mb-1 px-3 py-3 rounded-xl bg-surface-50/50 dark:bg-neutral-900/30 flex items-center gap-3 hover:bg-primary/5 dark:hover:bg-primary/10 transition-all duration-150 focus-ring"
+                      aria-label="Go to profile"
+                    >
                       {avatarSrc ? (
                         <Image
                           src={avatarSrc}
@@ -289,33 +302,23 @@ export default function Navbar() {
                         />
                       ) : (
                         <div className="w-9 h-9 rounded-full bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-light flex items-center justify-center text-xs font-bold ring-2 ring-primary/10">
-                          {getInitials(user.user_metadata?.name || user.email)}
+                          {getInitials(displayName || user.email)}
                         </div>
                       )}
-                      <div className="overflow-hidden">
+                      <div className="min-w-0 flex-1 overflow-hidden">
                         <p className="text-sm font-semibold text-surface-900 dark:text-white truncate">
-                          {user.user_metadata?.name || "AlgoBuddy User"}
+                          {displayName}
                         </p>
                         <p className="text-xs text-surface-500 dark:text-[#9e9e9e] truncate">
                           {user.email}
                         </p>
                       </div>
-                    </div>
+                      <ArrowRight className="w-4 h-4 shrink-0 text-surface-400 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 group-focus-visible:opacity-100 group-focus-visible:translate-x-0 group-hover:text-primary dark:group-hover:text-primary-light transition-all duration-150" />
+                    </Link>
 
                     <ProfileProgress compact={true} />
 
                     <div className="py-1.5 px-1.5 flex flex-col gap-0.5">
-                      <Link
-                        href="/profile"
-                        onClick={() =>
-                          setUserMenuOpen(false)
-                        }
-                        className="group flex items-center gap-3 px-3 py-2 text-[14px] font-medium text-surface-700 dark:text-[#f5f5f5] rounded-lg hover:text-primary dark:hover:text-primary-light hover:bg-primary/5 dark:hover:bg-primary/10 transition-all duration-150 focus-ring"
-                      >
-                        <User className="w-4 h-4 text-surface-400 group-hover:text-primary dark:group-hover:text-primary-light group-hover:scale-105 transition-all duration-150" />
-                        Profile
-                      </Link>
-
                       <Link
                         href="/arena"
                         onClick={() =>

@@ -7,7 +7,6 @@ import QueueModal from "@/app/components/models/QueueModal";
 import LinkedListModal from "@/app/components/models/LinkedListModal";
 import TreeModal from "@/app/components/models/TreeModal";
 import GraphModal from "@/app/components/models/GraphModal";
-import TutorialOverlay from "@/app/components/ui/TutorialOverlay";
 import BackToTop from "../components/ui/backtotop";
 import BookmarkSection from "@/app/components/ui/BookmarkSection";
 
@@ -151,17 +150,19 @@ const sections = [
           { name: "Binary Search", path: "/visualizer/array/binarysearch" },
         ],
       },
-      {
-        title: "Sorting",
-        items: [
-          { name: "Bubble Sort", path: "/visualizer/array/bubblesort" },
-          { name: "Selection Sort", path: "/visualizer/array/selectionsort" },
-          { name: "Insertion Sort", path: "/visualizer/array/insertionsort" },
-          { name: "Merge Sort", path: "/visualizer/array/mergesort" },
-          { name: "Quick Sort", path: "/visualizer/array/quicksort" },
-          { name: "Counting Sort", path: "/visualizer/array/countingsort" },
-        ],
-      },
+     {
+      title: "Sorting",
+      items: [
+        { name: "Bubble Sort", path: "/visualizer/array/bubblesort" },
+        { name: "Selection Sort", path: "/visualizer/array/selectionsort" },
+        { name: "Insertion Sort", path: "/visualizer/array/insertionsort" },
+        { name: "Merge Sort", path: "/visualizer/array/mergesort" },
+        { name: "Quick Sort", path: "/visualizer/array/quicksort" },
+        { name: "Heap Sort", path: "/visualizer/array/heapsort" },
+        { name: "Radix Sort", path: "/visualizer/array/radixsort" },
+        { name: "Counting Sort", path: "/visualizer/array/countingsort" },
+      ],
+    },
       {
         title: "Interview Patterns",
         items: [
@@ -905,8 +906,6 @@ const Visualizer = () => {
       className="min-h-screen bg-white dark:bg-[#1c1d1f] text-gray-800 dark:text-gray-200 flex flex-col"
       style={{ fontFamily: "'Inter', 'Source Sans 3', sans-serif" }}
     >
-      <TutorialOverlay />
-
       <VisualizerClient initialSections={clientSections} />
 
       <div className="w-full relative">

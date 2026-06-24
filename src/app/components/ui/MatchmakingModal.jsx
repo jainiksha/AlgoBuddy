@@ -93,8 +93,8 @@ export default function MatchmakingModal({ isOpen, onClose, onMatchFound, curren
       setStatusIdx((prev) => (prev < SEARCH_STATUSES.length - 1 ? prev + 1 : prev));
     }, 1800);
 
-    const socketUrl = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-      ? "http://127.0.0.1:4000"
+    const socketUrl = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.hostname.startsWith("192.168.")
+      ? `http://${window.location.hostname}:4000`
       : "https://algobuddy-socket-server.onrender.com";
 
     // Establish Socket connection with auth token

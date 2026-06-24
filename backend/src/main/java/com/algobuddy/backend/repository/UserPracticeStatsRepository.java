@@ -13,7 +13,7 @@ import java.util.UUID;
 @Repository
 public interface UserPracticeStatsRepository extends JpaRepository<UserPracticeStats, UUID> {
 
-    @Query(value = "SELECT pg_advisory_xact_lock(hashtext('streak_update:' || :userId::text)::bigint)", nativeQuery = true)
+    @Query(value = "SELECT pg_advisory_xact_lock(CAST(hashtext('streak_update:' || CAST(:userId AS text)) AS bigint))", nativeQuery = true)
     void acquireStreakUpdateLock(@Param("userId") UUID userId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)

@@ -84,7 +84,7 @@ public class MySheetService {
                 MySheet newItem = new MySheet();
                 newItem.setUserId(targetUserId);
                 newItem.setProblemId(sharedItem.getProblemId());
-                newItem.setNote(sharedItem.getNote() == null ? "" : sharedItem.getNote());
+                newItem.setNote(null);
                 mySheetRepository.save(newItem);
             }
         }

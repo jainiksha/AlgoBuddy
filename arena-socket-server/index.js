@@ -32,7 +32,14 @@ function isAllowedVercelOrigin(origin) {
 function isOriginAllowed(origin, callback) {
   // Allow requests with no origin (Render health checks, server-to-server)
   if (!origin) return callback(null, true);
-  if (ALLOWED_ORIGINS.includes(origin) || isAllowedVercelOrigin(origin)) {
+  
+  if (
+    ALLOWED_ORIGINS.includes(origin) || 
+    isAllowedVercelOrigin(origin) ||
+    origin.startsWith("http://localhost:") ||
+    origin.startsWith("http://127.0.0.1:") ||
+    origin.startsWith("http://192.168.")
+  ) {
     callback(null, true);
   } else {
     callback(new Error("Not allowed by CORS"));
@@ -182,20 +189,31 @@ const ATOMIC_DISCONNECT_CLEANUP_SCRIPT = `
 
   local matchId = redis.call('HGET', socketKey, 'matchId')
   local opponentSocketId = ''
+  local opponentUserId = ''
 
   if matchId then
     local matchStr = redis.call('GET', '{arena}:match:' .. matchId)
     if matchStr then
-      -- String replacement of status: "in-progress" to "completed"
-      local updatedMatchStr = string.gsub(matchStr, '"status"%s*:%s*"in%-progress"', '"status":"completed"')
+      -- Set disconnected flag instead of marking completed; the remaining
+      -- player claims the win via match_complete, preventing race conditions
+      -- where the disconnect handler overwrites a legitimate result.
+      local updatedMatchStr = string.gsub(matchStr, '"status"%s*:%s*"in%-progress"', '"status":"disconnected"')
       redis.call('SET', '{arena}:match:' .. matchId, updatedMatchStr, 'EX', 3600)
-      
-      -- Extract socketIds using pattern matching
+
+      -- Extract socketIds and userIds using pattern matching
+      -- Match players array entries to find opponent (the one whose socketId != disconnecting socket)
+      local idx = 1
       for sId in string.gmatch(matchStr, '"socketId"%s*:%s*"([^"]+)"') do
         if sId ~= socketId then
           opponentSocketId = sId
         end
         redis.call('HDEL', '{arena}:socket:' .. sId, 'matchId')
+      end
+      -- Extract opponent userId from match data
+      for uId in string.gmatch(matchStr, '"userId"%s*:%s*"([^"]+)"') do
+        if uId ~= userId then
+          opponentUserId = uId
+        end
       end
     end
   end
@@ -203,7 +221,7 @@ const ATOMIC_DISCONNECT_CLEANUP_SCRIPT = `
   redis.call('DEL', socketKey)
   redis.call('DEL', '{arena}:ratelimit:' .. socketId)
 
-  return '{"opponentSocketId":"' .. opponentSocketId .. '"}'
+  return '{"opponentSocketId":"' .. opponentSocketId .. '","opponentUserId":"' .. opponentUserId .. '"}'
 `;
 
 const io = new Server(server, {
@@ -279,27 +297,32 @@ setInterval(() => {
 // Periodic queue health checker to remove stale entries from matchmaking queues
 setInterval(async () => {
   try {
-    const queueKeys = await redisClient.keys('{arena}:queue:*');
-    for (const key of queueKeys) {
-      const elements = await redisClient.lrange(key, 0, -1);
-      let changed = false;
-      for (const el of elements) {
-        const parsed = JSON.parse(el);
-        if (parsed.expiresAt && Date.now() > parsed.expiresAt) {
-          await redisClient.lrem(key, 0, el);
-          changed = true;
-          continue;
+    const queueKeys = [];
+    let cursor = '0';
+    do {
+      const result = await redisClient.scan(cursor, 'MATCH', '{arena}:queue:*', 'COUNT', 100);
+      cursor = result[0];
+      for (const key of result[1]) {
+        const elements = await redisClient.lrange(key, 0, -1);
+        let changed = false;
+        for (const el of elements) {
+          const parsed = JSON.parse(el);
+          if (parsed.expiresAt && Date.now() > parsed.expiresAt) {
+            await redisClient.lrem(key, 0, el);
+            changed = true;
+            continue;
+          }
+          const socket = io.sockets.sockets.get(parsed.socketId);
+          if (!socket || !socket.connected) {
+            await redisClient.lrem(key, 0, el);
+            changed = true;
+          }
         }
-        const socket = io.sockets.sockets.get(parsed.socketId);
-        if (!socket || !socket.connected) {
-          await redisClient.lrem(key, 0, el);
-          changed = true;
+        if (changed && elements.length === 0) {
+          await redisClient.expire(key, 60);
         }
       }
-      if (changed && elements.length === 0) {
-        await redisClient.expire(key, 60);
-      }
-    }
+    } while (cursor !== '0');
   } catch (err) {
     console.error('[queue-health] Error cleaning stale entries:', err.message);
   }
@@ -361,15 +384,22 @@ io.on("connection", async (socket) => {
   // Verify Supabase JWT from handshake auth using JWKS
   const token = socket.handshake.auth?.token;
   const authPayload = await verifyAuthToken(token);
+  
   if (!authPayload) {
-    socket.emit("error", { message: "Authentication required. Please sign in again." });
-    socket.disconnect(true);
-    return;
+    const queryUserId = socket.handshake.query?.userId;
+    if (queryUserId && queryUserId.startsWith("spectator_")) {
+      socket.data.userId = queryUserId;
+      console.log(`Spectator connected: ${socket.id}, userId: ${socket.data.userId}`);
+    } else {
+      socket.emit("error", { message: "Authentication required. Please sign in again." });
+      socket.disconnect(true);
+      return;
+    }
+  } else {
+    // Store verified userId from the JWT payload
+    socket.data.userId = authPayload.sub || authPayload.id;
+    console.log(`Authenticated user connected: ${socket.id}, userId: ${socket.data.userId}`);
   }
-
-  // Store verified userId from the JWT payload — never trust client-supplied userId
-  socket.data.userId = authPayload.sub || authPayload.id;
-  console.log(`Authenticated user connected: ${socket.id}, userId: ${socket.data.userId}`);
 
   socket.on("join_matchmaking", async (data) => {
     try {
@@ -494,8 +524,25 @@ io.on("connection", async (socket) => {
       
       socket.join(data.matchId);
       await redisClient.hset(`{arena}:socket:${socket.id}`, "matchId", data.matchId);
+      console.log(`Player ${socket.data.userId} re-joined match ${data.matchId}`);
     } catch (error) {
       console.error(`[join_match] Error for user ${socket.data.userId}:`, error);
+    }
+  });
+
+  socket.on("join_spectator", async (data) => {
+    try {
+      if (!data.matchId) return;
+      const matchStr = await redisClient.get(`{arena}:match:${data.matchId}`);
+      if (!matchStr) return;
+      
+      // Spectator simply joins the socket.io room to receive broadcasts.
+      socket.join(data.matchId);
+      // We explicitly DO NOT set {arena}:socket:${socket.id} -> matchId in Redis, 
+      // preventing the spectator from emitting events.
+      console.log(`Spectator ${socket.data.userId} joined match ${data.matchId}`);
+    } catch (error) {
+      console.error(`[join_spectator] Error for user ${socket.data.userId}:`, error);
     }
   });
 
@@ -504,29 +551,18 @@ io.on("connection", async (socket) => {
     try {
       if (await isRateLimited(socket.data.userId)) return;
       const matchId = await redisClient.hget(`{arena}:socket:${socket.id}`, "matchId");
-      if (!matchId || matchId !== data.matchId) return;
+      if (!matchId || matchId !== data.matchId) {
+        console.log(`Player ${socket.data.userId} failed typing_status because matchId doesn't match: expected ${data.matchId}, got ${matchId}`);
+        return;
+      }
 
+      console.log(`Player ${socket.data.userId} emitted typing_status to room ${data.matchId}`);
       socket.to(data.matchId).emit("opponent_typing_status", {
         isTyping: data.isTyping,
         userId: socket.data.userId
       });
     } catch (error) {
       console.error(`[typing_status] Error for user ${socket.data.userId}:`, error);
-    }
-  });
-
-  socket.on("test_result", async (data) => {
-    try {
-      if (await isRateLimited(socket.data.userId)) return;
-      const matchId = await redisClient.hget(`{arena}:socket:${socket.id}`, "matchId");
-      if (!matchId || matchId !== data.matchId) return;
-
-      socket.to(data.matchId).emit("opponent_test_result", {
-        passed: data.passed,
-        userId: socket.data.userId
-      });
-    } catch (error) {
-      console.error(`[test_result] Error for user ${socket.data.userId}:`, error);
     }
   });
 
@@ -567,31 +603,38 @@ io.on("connection", async (socket) => {
       const matchId = await redisClient.hget(`{arena}:socket:${socket.id}`, "matchId");
       if (!matchId || matchId !== data.matchId) return;
 
-      const ATOMIC_COMPLETE_SCRIPT = `
+      const ATOMIC_COMPLETE_SCRIPT_V2 = `
         local matchKey = KEYS[1]
-        local matchStr = redis.call('GET', matchKey)
-        if not matchStr then return 0 end
-        
-        -- Check if already completed
-        if string.find(matchStr, '"status"%s*:%s*"completed"') then
+        local winnerId = ARGV[1]
+
+        local completionKey = matchKey .. ":completed"
+        local completed = redis.call('SET', completionKey, winnerId, 'NX', 'EX', 3600)
+        if not completed then
           return 0
         end
-        
-        -- Replace status and add/replace winnerId
+
+        local matchStr = redis.call('GET', matchKey)
+        if not matchStr then
+          redis.call('DEL', completionKey)
+          return 0
+        end
+
         local updated = string.gsub(matchStr, '"status"%s*:%s*"[^"]+"', '"status":"completed"')
         if string.find(updated, '"winnerId"') then
-          updated = string.gsub(updated, '"winnerId"%s*:%s*"[^"]+"', '"winnerId":"' .. ARGV[1] .. '"')
+          updated = string.gsub(updated, '"winnerId"%s*:%s*"[^"]+"', '"winnerId":"' .. winnerId .. '"')
         else
-          updated = string.gsub(updated, '}%s*$', ',"winnerId":"' .. ARGV[1] .. '"}')
+          updated = string.gsub(updated, '}%s*$', ',"winnerId":"' .. winnerId .. '"}')
         end
-        
+
         redis.call('SET', matchKey, updated)
         return 1
       `;
 
       try {
-        const acquired = await redisClient.eval(ATOMIC_COMPLETE_SCRIPT, 1, `{arena}:match:${matchId}`, socket.data.userId);
-        if (acquired !== 1) return;
+        const acquired = await redisClient.eval(ATOMIC_COMPLETE_SCRIPT_V2, 1, `{arena}:match:${matchId}`, socket.data.userId);
+        if (acquired !== 1) {
+          return;
+        }
 
         io.in(matchId).emit("match_ended", { winnerId: socket.data.userId });
 
@@ -604,26 +647,7 @@ io.on("connection", async (socket) => {
         }
         await redisClient.expire(`{arena}:match:${matchId}`, 60 * 60);
       } catch (err) {
-        if (err.message && err.message.includes('cjson')) {
-          const matchStr = await redisClient.get(`{arena}:match:${matchId}`);
-          if (matchStr) {
-            const match = JSON.parse(matchStr);
-            if (match.status !== "completed") {
-              match.status = "completed";
-              match.winnerId = socket.data.userId;
-              await redisClient.set(`{arena}:match:${matchId}`, JSON.stringify(match));
-
-              io.in(matchId).emit("match_ended", { winnerId: socket.data.userId });
-
-              for (const p of match.players) {
-                await redisClient.hdel(`{arena}:socket:${p.socketId}`, "matchId");
-              }
-              await redisClient.expire(`{arena}:match:${matchId}`, 60 * 60);
-            }
-          }
-        } else {
-          throw err;
-        }
+        console.error(`[match_complete] Error for user ${socket.data.userId}:`, err);
       }
     } catch (error) {
       console.error(`[match_complete] Error for user ${socket.data.userId}:`, error);
@@ -642,8 +666,8 @@ io.on("connection", async (socket) => {
 
       const result = JSON.parse(resultStr);
 
-      if (result.opponentSocketId) {
-        io.to(result.opponentSocketId).emit("opponent_disconnected", { winnerId: socket.data.userId });
+      if (result.opponentSocketId && result.opponentUserId) {
+        io.to(result.opponentSocketId).emit("opponent_disconnected", { winnerId: result.opponentUserId });
       }
 
       console.log(`User disconnected: ${socket.id}`);
@@ -747,6 +771,37 @@ app.get("/debug", async (req, res) => {
 
 app.get("/health", (req, res) => {
   res.json({ status: "Arena Socket Server is running with Redis!" });
+});
+
+async function scanRedisKeys(pattern) {
+  let keys = [];
+  let cursor = '0';
+  do {
+    const result = await redisClient.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
+    cursor = result[0];
+    keys.push(...result[1]);
+  } while (cursor !== '0');
+  return keys;
+}
+
+app.get("/api/matches/active", async (req, res) => {
+  try {
+    const matchKeys = await scanRedisKeys("{arena}:match:*");
+    const activeMatches = [];
+    for (const key of matchKeys) {
+      if (key.endsWith(":completed")) continue;
+      const matchStr = await redisClient.get(key);
+      if (matchStr) {
+        const match = JSON.parse(matchStr);
+        if (match.status === "in-progress") {
+          activeMatches.push(match);
+        }
+      }
+    }
+    res.json({ matches: activeMatches });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 server.listen(PORT, () => {
