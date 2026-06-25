@@ -616,8 +616,10 @@ export default function VisualizerClient({ initialSections }) {
 
       <section className="px-5 pt-12 pb-20 min-h-screen bg-gradient-to-b from-white via-surface-50 to-purple-50/40 dark:bg-none dark:bg-[#1c1d1f] transition-colors duration-300">
         <div className="max-w-[1100px] mx-auto">
-          <div className="flex flex-col items-center gap-4 max-w-[680px] mx-auto mt-8 mb-10">
-            <div className="relative w-full max-w-[480px]">
+          
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-[760px] mx-auto mt-8 mb-10">
+            <div className="relative w-full sm:flex-1">
               <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#9ca3af]" />
               <input
                 type="text"
@@ -639,6 +641,13 @@ export default function VisualizerClient({ initialSections }) {
                 </button>
               )}
             </div>
+            <Link href="/visualizer/quiz">
+              <button
+                className="h-[52px] px-6 rounded-2xl bg-[#a435f0] text-white font-semibold hover:bg-[#8e2de2] transition-all whitespace-nowrap"
+              >
+                🎯 Quiz Mode
+              </button>
+            </Link>
           </div>
 
           {search.trim() ? (
