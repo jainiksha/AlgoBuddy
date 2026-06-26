@@ -65,6 +65,7 @@ export default function ArenaPage() {
   const { progress, getStatus, streakData } = useSheetProgress();
 
   const ensureLoggedIn = () => {
+    if (loading) return false; 
     if (!user) {
       toast.error("Please login to use this feature!");
       router.push("/login");

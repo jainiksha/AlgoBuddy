@@ -35,7 +35,7 @@ import { useSheetProgress } from "@/app/hooks/useSheetProgress";
 import { useMySheet } from "@/app/hooks/useMySheet";
 
 export default function PracticePage() {
-  const { user } = useUser();
+  const { user,loading } = useUser();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -94,6 +94,7 @@ export default function PracticePage() {
   }, [searchParams]);
 
   const ensureLoggedIn = () => {
+    if (loading) return false; 
     if (!user) {
       toast.error("Please login to use this feature!");
       router.push("/login");
