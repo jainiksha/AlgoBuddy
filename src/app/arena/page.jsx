@@ -118,9 +118,10 @@ export default function ArenaPage() {
   useEffect(() => {
     const fetchLiveMatches = async () => {
       try {
-        const socketUrl = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.hostname.startsWith("192.168.")
-          ? `http://${window.location.hostname}:4000`
-          : "https://algobuddy-socket-server.onrender.com";
+        const socketUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 
+          (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.hostname.startsWith("192.168.")
+            ? `http://${window.location.hostname}:4000`
+            : "https://algobuddy-socket-server.onrender.com");
           
         const res = await fetch(`${socketUrl}/api/matches/active`);
         if (res.ok) {

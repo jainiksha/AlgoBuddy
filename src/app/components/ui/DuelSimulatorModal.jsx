@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Play, AlertTriangle, CheckCircle, Terminal } from "lucide-react";
+import { X, Play, AlertTriangle, CheckCircle, Terminal, Loader2 } from "lucide-react";
 import { Editor } from "@monaco-editor/react";
 import { io } from "socket.io-client";
 import { api } from "@/lib/apiClient";
@@ -17,6 +17,7 @@ export default function DuelSimulatorModal({ isOpen, onClose, opponent, currentU
   const [victoryState, setVictoryState] = useState(null); // "victory" or "defeat"
   const [isExecuting, setIsExecuting] = useState(false);
   const [socket, setSocket] = useState(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   const logContainerRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -68,9 +69,10 @@ export default function DuelSimulatorModal({ isOpen, onClose, opponent, currentU
       const token = sessionData?.session?.access_token;
       if (!token) return;
 
-      const springBootBase = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
-        ? "http://localhost:8080" 
-        : "https://algobuddy-backend-7iwv.onrender.com";
+      const springBootBase = process.env.NEXT_PUBLIC_SPRING_BOOT_API_URL || 
+        (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.hostname.startsWith("192.168.")
+          ? `http://${window.location.hostname}:8080` 
+          : "https://algobuddy-backend-7iwv.onrender.com");
 
       await fetch(`${springBootBase}/api/v1/arena/match-result`, {
         method: "POST",
@@ -95,9 +97,20 @@ export default function DuelSimulatorModal({ isOpen, onClose, opponent, currentU
   useEffect(() => {
     if (!isOpen) return;
 
-    const socketUrl = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.hostname.startsWith("192.168.")
-      ? `http://${window.location.hostname}:4000`
-      : "https://algobuddy-socket-server.onrender.com";
+    const safetyTimeout = setTimeout(() => {
+      setIsInitializing((initializing) => {
+        if (initializing) {
+          addLog("Initialization timed out. Entering arena anyway.");
+          return false;
+        }
+        return initializing;
+      });
+    }, 8000);
+
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_SERVER_URL || 
+      (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.hostname.startsWith("192.168.")
+        ? `http://${window.location.hostname}:4000`
+        : "https://algobuddy-socket-server.onrender.com");
 
     const newSocket = io(socketUrl, {
       transports: ["websocket", "polling"],
@@ -122,11 +135,12 @@ export default function DuelSimulatorModal({ isOpen, onClose, opponent, currentU
          const { data: sessionData } = await supabase.auth.getSession();
          const token = sessionData?.session?.access_token;
          if (token) {
-           const springBootBase = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
-             ? "http://localhost:8080" 
-             : "https://algobuddy-backend-7iwv.onrender.com";
+           const springBootBase = process.env.NEXT_PUBLIC_SPRING_BOOT_API_URL || 
+             (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.hostname.startsWith("192.168.")
+               ? `http://${window.location.hostname}:8080` 
+               : "https://algobuddy-backend-7iwv.onrender.com");
            try {
-             await fetch(`${springBootBase}/api/v1/arena/match/init`, {
+             const res = await fetch(`${springBootBase}/api/v1/arena/match/init`, {
                method: "POST",
                headers: {
                  "Content-Type": "application/json",
@@ -139,11 +153,30 @@ export default function DuelSimulatorModal({ isOpen, onClose, opponent, currentU
                  difficulty: "Easy"
                })
              });
+             if (res.ok) {
+               setIsInitializing(false);
+               addLog("Match initialized on server. Starting duel!");
+             } else {
+               addLog("Failed to initialize match on server. Stats tracking may be offline.");
+               setIsInitializing(false);
+             }
            } catch (e) {
              console.error("Failed to init match:", e);
+             addLog("Failed to connect to matchmaking backend. Stats tracking offline.");
+             setIsInitializing(false);
            }
+         } else {
+           setIsInitializing(false);
          }
+      } else {
+        setIsInitializing(false);
       }
+    });
+
+    newSocket.on("connect_error", (err) => {
+      console.error("Socket Connection Error:", err.message);
+      addLog("Socket connection error. Initializing offline mode...");
+      setIsInitializing(false);
     });
 
     newSocket.on("opponent_typing_status", (data) => {
@@ -205,6 +238,7 @@ export default function DuelSimulatorModal({ isOpen, onClose, opponent, currentU
     });
 
     return () => {
+      clearTimeout(safetyTimeout);
       if (opponentIdleTimerRef.current) clearTimeout(opponentIdleTimerRef.current);
       newSocket.disconnect();
     };
@@ -333,7 +367,13 @@ export default function DuelSimulatorModal({ isOpen, onClose, opponent, currentU
         </div>
 
         {/* Split Area */}
-        <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 flex overflow-hidden relative">
+          {isInitializing && (
+            <div className="absolute inset-0 bg-slate-950/80 z-[100] flex flex-col items-center justify-center space-y-4">
+              <Loader2 className="w-10 h-10 text-primary dark:text-purple-400 animate-spin" />
+              <p className="text-sm font-semibold text-slate-300">Initializing match session...</p>
+            </div>
+          )}
           {/* Left Panel: Problem Statement */}
           <div className="w-1/4 bg-[#0a0a0f] border-r border-slate-800 p-6 overflow-y-auto hidden md:block">
             <h2 className="text-xl font-bold mb-4">{problemName}</h2>

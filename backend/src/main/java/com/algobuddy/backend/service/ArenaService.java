@@ -162,9 +162,15 @@ public class ArenaService {
             return;
         }
 
-        // Verify the match pair via the WebSocket matchmaking server (Redis-backed)
-        // This ensures the opponent actually consented through WebSocket matchmaking
-        UUID opponentId = verifyMatchmakingPair(request.getMatchId(), requestingUserId);
+        UUID opponentId;
+        if (request.getMatchId() != null && request.getMatchId().startsWith("mock-match-")) {
+            // Bypass socket matchmaking verification for offline practice matches against AI Bots
+            opponentId = UUID.fromString("00000000-0000-0000-0000-000000000000");
+        } else {
+            // Verify the match pair via the WebSocket matchmaking server (Redis-backed)
+            // This ensures the opponent actually consented through WebSocket matchmaking
+            opponentId = verifyMatchmakingPair(request.getMatchId(), requestingUserId);
+        }
 
         ArenaMatch match = ArenaMatch.builder()
                 .matchId(request.getMatchId())
@@ -252,7 +258,9 @@ public class ArenaService {
                 }
 
                 if (existingMatch.getWinnerId() != null) {
-                    throw new IllegalArgumentException("Match result has already been recorded");
+                    // Match result has already been recorded. We return silently to prevent
+                    // duplicate submission exceptions from throwing 500 errors on the client.
+                    return;
                 }
 
                 UUID opponentId = existingMatch.getPlayer1Id().equals(requestingUserId)
