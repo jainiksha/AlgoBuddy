@@ -28,6 +28,10 @@ public class PracticeService {
     private final UserProgressRepository progressRepository;
     private final UserPracticeStatsRepository statsRepository;
 
+    @Autowired
+    @Lazy
+    private PracticeService self;
+
 
     @Transactional(readOnly = true)
     public ProgressResponse getUserProgress(@NonNull UUID userId) {
@@ -67,7 +71,7 @@ public class PracticeService {
         progressRepository.upsertProgress(userId, request.getProblemId(), request.getStatus());
 
         if ("Completed".equals(request.getStatus())) {
-            updateStreak(userId);
+            updateStreakWithRetry(userId);
         }
 
         return getUserProgress(userId);
@@ -118,7 +122,7 @@ public class PracticeService {
         progressRepository.saveAll(toSave);
 
         if (anyCompleted) {
-            updateStreak(userId);
+            updateStreakWithRetry(userId);
         }
 
         return getUserProgress(userId);
