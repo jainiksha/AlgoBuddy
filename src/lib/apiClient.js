@@ -76,6 +76,15 @@ class ApiClient {
 
     const data = await res.json();
     if (!res.ok) {
+      if (res.status === 403 && data.error && data.error.includes("CSRF")) {
+        this.csrfToken = null;
+        if (typeof document !== 'undefined') {
+          document.cookie = `${CSRF_COOKIE_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+        }
+        if (!options._csrfRetried) {
+          return this.request(path, { ...options, _csrfRetried: true }, authRetries);
+        }
+      }
       throw new ApiError(data.error || data.message || 'Request failed', data.code || 'REQUEST_ERROR', res.status);
     }
     return data;
