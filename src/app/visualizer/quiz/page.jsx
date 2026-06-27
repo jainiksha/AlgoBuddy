@@ -60,6 +60,13 @@ export default function QuizPage() {
       href: "/visualizer/array/heapsort/quiz",
       color: "bg-yellow-600 hover:bg-yellow-700",
     },
+    {
+        title: "Radix Sort Quiz",
+        description:
+        "Test your understanding of Radix Sort with multiple-choice questions.",
+        href: "/visualizer/array/radixsort/quiz",
+        color: "bg-cyan-600 hover:bg-cyan-700",
+    },
   ];
 
   return (
