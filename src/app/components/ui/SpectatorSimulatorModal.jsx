@@ -6,6 +6,7 @@ import { X, Terminal, Eye } from "lucide-react";
 import { io } from "socket.io-client";
 import PlayerTestProgress from "./spectator/PlayerTestProgress";
 import PlayerLanguageBadge from "./spectator/PlayerLanguageBadge";
+import PlayerSpeedometer from "./spectator/PlayerSpeedometer";
 
 export default function SpectatorSimulatorModal({ isOpen, onClose, matchData }) {
   const [seconds, setSeconds] = useState(0);
