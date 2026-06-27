@@ -121,6 +121,26 @@ export default function QuizPage() {
   </div>
 </Link>
 
+{/* Quick Sort Quiz */}
+
+<Link href="/visualizer/array/quicksort/quiz">
+  <div className="rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm hover:shadow-lg transition-all">
+    <h2 className="text-2xl font-semibold mb-3">
+      📘 Quick Sort Quiz
+    </h2>
+
+    <p className="text-gray-600 dark:text-gray-400 mb-6">
+      Test your understanding of Quick Sort with multiple-choice questions.
+    </p>
+
+    <button className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg">
+      Start Quiz
+    </button>
+  </div>
+</Link>
+
+
+
         </div>
       </div>
     </div>
