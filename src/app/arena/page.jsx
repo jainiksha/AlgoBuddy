@@ -612,12 +612,41 @@ export default function ArenaPage() {
                 )}
 
                 {activeTab === "ranked" && (
-                  <button
-                    onClick={() => openMatchmakingModal()}
-                    className="px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-bold shadow-md shadow-primary/10 transition"
-                  >
-                    Launch Ranked Matchmaking
-                  </button>
+                  <div className="w-full text-left space-y-6">
+                    <div>
+                      <h4 className="text-xl font-extrabold text-slate-800 dark:text-neutral-200 mb-1">Ranked Matchmaking</h4>
+                      <p className="text-xs text-slate-500 dark:text-neutral-400">Compete against similarly skilled opponents to climb the ranks.</p>
+                    </div>
+
+                    <div className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-6 flex flex-col items-center justify-center text-center">
+                      <div className="relative mb-6">
+                        <div className="w-32 h-32 rounded-full border-4 border-slate-200 dark:border-neutral-800 flex items-center justify-center shadow-inner bg-white dark:bg-neutral-800 relative z-10">
+                          <Trophy size={64} className="text-slate-400" />
+                        </div>
+                        <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent border-l-transparent transform rotate-45 z-20"></div>
+                      </div>
+                      
+                      <h3 className="text-2xl font-black text-slate-800 dark:text-neutral-200 uppercase tracking-widest mb-1">Unranked</h3>
+                      <p className="text-xs text-slate-500 font-bold mb-6">Play 5 placement matches to reveal your rank</p>
+
+                      <div className="w-full max-w-sm mb-6">
+                        <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-2">
+                          <span>Placement Progress</span>
+                          <span>0 / 5</span>
+                        </div>
+                        <div className="w-full h-2 bg-slate-200 dark:bg-neutral-800 rounded-full overflow-hidden">
+                          <div className="h-full w-0 bg-primary rounded-full transition-all duration-1000"></div>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => openMatchmakingModal()}
+                        className="px-8 py-3.5 bg-primary hover:bg-primary/90 text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/30 transition transform hover:-translate-y-0.5 active:translate-y-0"
+                      >
+                        Find Ranked Match
+                      </button>
+                    </div>
+                  </div>
                 )}
 
                 {activeTab === "friend" && (
