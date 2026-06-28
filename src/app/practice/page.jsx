@@ -32,6 +32,15 @@ import { useUser } from "@/features/user/UserContext";
 import { useProblemBookmarks } from "@/app/hooks/useProblemBookmarks";
 import { useSheetProgress } from "@/app/hooks/useSheetProgress";
 import { useMySheet } from "@/app/hooks/useMySheet";
+import { supabase } from "@/lib/supabase";
+
+function isSpringBootApi() {
+  return typeof window !== "undefined" && process.env.NEXT_PUBLIC_USE_SPRING_BOOT_API === "true";
+}
+
+function springBootApiBase() {
+  return process.env.NEXT_PUBLIC_SPRING_BOOT_API_URL || "http://localhost:8080";
+}
 
 export default function PracticePage() {
   const { user,loading } = useUser();
@@ -328,16 +337,55 @@ export default function PracticePage() {
 
   const totalPages = Math.ceil(filteredProblems.length / itemsPerPage);
 
-  const handleShareSheet = () => {
-    if (!user) return;
-    const shareUrl = `${window.location.origin}/practice/shared/${user.id}`;
-    navigator.clipboard.writeText(shareUrl)
-      .then(() => {
-        toast.success("Share link copied to clipboard! 📋");
-      })
-      .catch(() => {
-        toast.error("Failed to copy link. Please copy manually.");
-      });
+  const handleShareSheet = async () => {
+    if (!ensureLoggedIn()) return;
+    if (sheetCount === 0) {
+      toast.error("Add problems to your sheet before sharing!");
+      return;
+    }
+
+    try {
+      if (isSpringBootApi()) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (!token) {
+          toast.error("Session expired. Please log in again.");
+          return;
+        }
+        const headers = {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        };
+        const results = await Promise.all(
+          Object.keys(sheet).map((problemId) =>
+            fetch(
+              `${springBootApiBase()}/api/v1/mysheet/${encodeURIComponent(problemId)}/visibility`,
+              {
+                method: "PATCH",
+                headers,
+                body: JSON.stringify({ isPublic: true }),
+              }
+            )
+          )
+        );
+        if (results.some((res) => !res.ok)) {
+          throw new Error("Failed to publish sheet");
+        }
+      } else {
+        const res = await fetch("/api/mysheet/share", { method: "POST" });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || "Failed to publish sheet");
+        }
+      }
+
+      const shareUrl = `${window.location.origin}/practice/shared/${user.id}`;
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("Sheet published and link copied! 📋");
+    } catch (err) {
+      console.error("Share sheet error:", err);
+      toast.error(err.message || "Failed to share sheet. Please try again.");
+    }
   };
 
   // Solve random unsolved problem
