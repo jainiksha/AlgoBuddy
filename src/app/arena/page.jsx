@@ -665,6 +665,48 @@ export default function ArenaPage() {
                     )}
                   </div>
                 )}
+                {activeTab === "streak" && (
+                  <div className="w-full text-left space-y-6">
+                    <div>
+                      <h4 className="text-xl font-extrabold text-slate-800 dark:text-neutral-200 mb-1">Daily Streak</h4>
+                      <p className="text-xs text-slate-500 dark:text-neutral-400">Keep your learning momentum going by solving problems every day.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-5 text-center">
+                        <Flame size={32} className="mx-auto mb-2 text-amber-500 animate-pulse" />
+                        <div className="text-2xl font-black text-slate-800 dark:text-neutral-200">{streakData?.current || 0}</div>
+                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Current Streak</div>
+                      </div>
+                      <div className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-5 text-center">
+                        <Trophy size={32} className="mx-auto mb-2 text-primary" />
+                        <div className="text-2xl font-black text-slate-800 dark:text-neutral-200">{streakData?.longest || 0}</div>
+                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Longest Streak</div>
+                      </div>
+                      <div className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-5 text-center">
+                        <Calendar size={32} className="mx-auto mb-2 text-indigo-500" />
+                        <div className="text-2xl font-black text-slate-800 dark:text-neutral-200">14</div>
+                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Total Days Active</div>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-5">
+                      <h5 className="text-sm font-bold text-slate-800 dark:text-neutral-200 mb-4">Activity Heatmap (Last 30 Days)</h5>
+                      <div className="grid grid-cols-7 gap-2">
+                        {Array.from({ length: 30 }).map((_, i) => {
+                          const isActive = Math.random() > 0.4;
+                          return (
+                            <div 
+                              key={i} 
+                              className={`aspect-square rounded-lg transition ${isActive ? "bg-amber-400 dark:bg-amber-500" : "bg-slate-200 dark:bg-neutral-800"} hover:scale-110`}
+                              title={isActive ? "Active" : "Inactive"}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </main>
