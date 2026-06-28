@@ -83,6 +83,13 @@ export default function QuizPage() {
       href: "/visualizer/recursion/basic-recursion/quiz",
       color: "bg-teal-600 hover:bg-teal-700",
     },
+    {
+      title: "Functional & Parameterized Recursion Quiz",
+      description:
+        "Test your understanding of Functional & Parameterized Recursion with multiple-choice questions.",
+      href: "/visualizer/recursion/functional-parameterized/quiz",
+      color: "bg-violet-600 hover:bg-violet-700",
+    },
   ];
 
   const [searchQuery, setSearchQuery] = useState("");
