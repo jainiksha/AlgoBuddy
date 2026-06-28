@@ -97,6 +97,13 @@ export default function QuizPage() {
       href: "/visualizer/recursion/multiple-calls/quiz",
       color: "bg-sky-600 hover:bg-sky-700",
     },
+    {
+      title: "Recursion on Subsequences Quiz",
+      description:
+        "Test your understanding of Recursion on Subsequences with multiple-choice questions.",
+      href: "/visualizer/recursion/subsequences/quiz",
+      color: "bg-rose-600 hover:bg-rose-700",
+    },
   ];
 
   const [searchQuery, setSearchQuery] = useState("");
