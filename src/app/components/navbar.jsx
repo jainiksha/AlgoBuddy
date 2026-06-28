@@ -25,8 +25,6 @@ import BottomNav from "./BottomNav";
 
 const MAX_AVATAR_URL_LENGTH = 512;
 
-const MAX_AVATAR_URL_LENGTH = 512;
-
 function getStoredTheme() {
   if (typeof window === "undefined") return "light";
 
