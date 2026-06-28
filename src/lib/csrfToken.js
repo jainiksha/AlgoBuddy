@@ -12,8 +12,11 @@ function getSecret() {
     );
   }
   if (!devSecret) {
-    const cryptoModule = require("crypto");
-    devSecret = cryptoModule.randomBytes(32).toString("hex");
+    const array = new Uint8Array(32);
+    globalThis.crypto.getRandomValues(array);
+    devSecret = Array.from(array)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
     console.warn(
       "CSRF_SECRET not set. Using a fallback development secret. " +
       "Set CSRF_SECRET in .env.local for persistence and security in production.",
@@ -66,4 +69,3 @@ export async function validateCsrfTokenEdge(token) {
   }
 }
 
-export const validateCsrfToken = validateCsrfTokenEdge;

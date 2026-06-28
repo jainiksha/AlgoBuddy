@@ -321,6 +321,7 @@ export default function GraphVisualizer({ algorithm = "bfs", startNode: initialS
   const [nodes, setNodes] = useState(defaultGraphs[algorithm]?.nodes || []);
   const [edges, setEdges] = useState(defaultGraphs[algorithm]?.edges || []);
   const [isEditing, setIsEditing] = useState(true);
+  const [targetNode, setTargetNode] = useState("");
 
   // Derived flags
   const isWeighted = weightedAlgorithms.has(algorithm);
@@ -342,7 +343,7 @@ export default function GraphVisualizer({ algorithm = "bfs", startNode: initialS
     const startNodeId = initialStartNode || (nodes.length > 0 ? nodes[0].id : null);
     if (algorithm === "bfs") return Array.from(bfsGenerator(adj, startNodeId));
     if (algorithm === "dfs") return Array.from(dfsGenerator(adj, startNodeId));
-    if (algorithm === "dijkstra") return Array.from(dijkstraGenerator(adj, startNodeId));
+    if (algorithm === "dijkstra") return Array.from(dijkstraGenerator(adj, startNodeId, targetNode || null));
     if (algorithm === "bellman-ford") return Array.from(bellmanFordGenerator(nodes, edges, startNodeId));
     if (algorithm === "floyd-warshall") return Array.from(floydWarshallGenerator(nodes, edges));
     if (algorithm === "prim") return Array.from(primGenerator(adj, startNodeId));
@@ -353,7 +354,7 @@ export default function GraphVisualizer({ algorithm = "bfs", startNode: initialS
     if (algorithm === "adjacency-list") return adjacencyListFrames(nodes, edges);
     if (algorithm === "adjacency-matrix") return adjacencyMatrixFrames(nodes, edges);
     return [];
-  }, [nodes, edges, algorithm, initialStartNode, isWeighted]);
+  }, [nodes, edges, algorithm, initialStartNode, targetNode, isWeighted]);
 
   const onStep = useCallback((step) => {
     // No specific local state needs to be updated here 
@@ -521,6 +522,25 @@ export default function GraphVisualizer({ algorithm = "bfs", startNode: initialS
               {isEditing ? "Editing Mode" : "Visualization Mode"}
             </button>
 
+            {algorithm === "dijkstra" && (
+              <div className="flex items-center gap-2 ml-2">
+                <label className="text-sm font-medium text-surface-600 dark:text-surface-300">Target Node:</label>
+                <select
+                  value={targetNode}
+                  onChange={(e) => {
+                    setTargetNode(e.target.value);
+                    engine.reset();
+                  }}
+                  className="bg-surface-50 border border-surface-200 dark:bg-surface-800 dark:border-surface-600 rounded px-2 py-1 text-sm text-surface-900 dark:text-white"
+                >
+                  <option value="">None (Traverse all)</option>
+                  {nodes.map(n => (
+                    <option key={n.id} value={n.id}>{n.label || n.id}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {/* Weighted badge */}
             {isWeighted && (
               <span className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 px-3 py-1.5 text-xs font-semibold text-yellow-600 dark:text-yellow-400">
@@ -554,8 +574,13 @@ export default function GraphVisualizer({ algorithm = "bfs", startNode: initialS
                 {currentFrameData.distances && (
                   <div className="flex items-center gap-2 rounded-lg bg-yellow-50 px-3 py-1.5 text-xs font-bold text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400">
                     Distances: {Object.entries(currentFrameData.distances)
-                      .map(([k, v]) => `${k}:${v === Infinity ? "∞" : v}`)
+                      .map(([k, v]) => `${nodeLabelById[k] || k}:${v === Infinity ? "∞" : v}`)
                       .join(", ")}
+                  </div>
+                )}
+                {currentFrameData.pq && (
+                  <div className="flex items-center gap-2 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400">
+                    PQ: [{currentFrameData.pq.map(item => `(${nodeLabelById[item.node] || item.node}:${item.dist})`).join(", ")}]
                   </div>
                 )}
                 {currentFrameData.intermediate && (
