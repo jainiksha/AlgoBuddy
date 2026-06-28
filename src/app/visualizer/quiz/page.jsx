@@ -90,6 +90,13 @@ export default function QuizPage() {
       href: "/visualizer/recursion/functional-parameterized/quiz",
       color: "bg-violet-600 hover:bg-violet-700",
     },
+    {
+      title: "Multiple Recursive Calls Quiz",
+      description:
+        "Test your understanding of Multiple Recursive Calls with multiple-choice questions.",
+      href: "/visualizer/recursion/multiple-calls/quiz",
+      color: "bg-sky-600 hover:bg-sky-700",
+    },
   ];
 
   const [searchQuery, setSearchQuery] = useState("");

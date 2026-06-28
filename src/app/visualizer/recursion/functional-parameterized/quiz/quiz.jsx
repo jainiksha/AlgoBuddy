@@ -184,7 +184,7 @@ const FunctionalParameterizedQuiz = () => {
       correctAnswer: 0,
       explanation:
         "Every recursive solution must include a base case to terminate recursion safely.",
-    },
+    }
   ];
 
   return (
