@@ -665,6 +665,61 @@ export default function ArenaPage() {
                     )}
                   </div>
                 )}
+                {activeTab === "tournaments" && (
+                  <div className="w-full text-left space-y-6">
+                    <div>
+                      <h4 className="text-xl font-extrabold text-slate-800 dark:text-neutral-200 mb-1">Tournaments</h4>
+                      <p className="text-xs text-slate-500 dark:text-neutral-400">Compete in scheduled events for large XP prizes and unique badges.</p>
+                    </div>
+
+                    <div className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-5 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-4 opacity-10">
+                        <Trophy size={100} />
+                      </div>
+                      <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider animate-pulse">Upcoming</span>
+                            <span className="text-xs font-bold text-slate-500 dark:text-neutral-400">Starts in 2d 14h</span>
+                          </div>
+                          <h5 className="text-lg font-bold text-slate-800 dark:text-neutral-200">Weekend Code Clash</h5>
+                          <p className="text-xs text-slate-600 dark:text-neutral-400 mt-1 max-w-sm">An open bracket tournament focusing on Graph traversal and Dynamic Programming algorithms.</p>
+                        </div>
+                        <div className="flex flex-col items-end gap-3">
+                          <div className="flex items-center -space-x-2">
+                            <div className="w-8 h-8 rounded-full bg-indigo-500 border-2 border-white dark:border-neutral-900 flex items-center justify-center text-[10px] text-white font-bold">JD</div>
+                            <div className="w-8 h-8 rounded-full bg-emerald-500 border-2 border-white dark:border-neutral-900 flex items-center justify-center text-[10px] text-white font-bold">AK</div>
+                            <div className="w-8 h-8 rounded-full bg-rose-500 border-2 border-white dark:border-neutral-900 flex items-center justify-center text-[10px] text-white font-bold">MR</div>
+                            <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-neutral-800 border-2 border-white dark:border-neutral-900 flex items-center justify-center text-[10px] text-slate-500 dark:text-neutral-400 font-bold">+124</div>
+                          </div>
+                          <button className="px-5 py-2 bg-primary hover:bg-primary/90 text-white font-bold text-xs rounded-xl transition shadow-md shadow-primary/20">
+                            Register Now
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border border-slate-200 dark:border-neutral-800 rounded-2xl p-5">
+                      <h5 className="text-sm font-bold text-slate-800 dark:text-neutral-200 mb-4">Past Winners</h5>
+                      <div className="space-y-3">
+                        {[
+                          { event: "Spring Algorithm Cup", winner: "AlgoMaster99", prize: "5000 XP" },
+                          { event: "Weekly Blitz #42", winner: "FastCoder22", prize: "1500 XP" },
+                        ].map((past, idx) => (
+                          <div key={idx} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-neutral-900/50 rounded-xl border border-slate-100 dark:border-neutral-800">
+                            <div>
+                              <div className="text-xs font-bold text-slate-800 dark:text-neutral-200">{past.event}</div>
+                              <div className="text-[10px] text-slate-500 dark:text-neutral-400 flex items-center gap-1 mt-0.5">
+                                <Trophy size={10} className="text-amber-500" /> Winner: {past.winner}
+                              </div>
+                            </div>
+                            <div className="text-xs font-bold text-primary">{past.prize}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </main>
