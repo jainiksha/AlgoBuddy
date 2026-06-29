@@ -104,6 +104,41 @@ export default function QuizPage() {
       href: "/visualizer/recursion/subsequences/quiz",
       color: "bg-rose-600 hover:bg-rose-700",
     },
+    {
+      title: "Backtracking Quiz",
+      description:
+        "Test your understanding of Backtracking with multiple-choice questions.",
+      href: "/visualizer/recursion/backtracking/quiz",
+      color: "bg-amber-600 hover:bg-amber-700",
+    },
+    {
+      title: "Recursion Trees Quiz",
+      description:
+        "Test your understanding of Recursion Trees with multiple-choice questions.",
+      href: "/visualizer/recursion/trees/quiz",
+      color: "bg-violet-600 hover:bg-violet-700",
+    },
+    {
+      title: "Call Stack Visualization Quiz",
+      description:
+        "Test your understanding of Call Stack Visualization with multiple-choice questions.",
+      href: "/visualizer/recursion/stack/quiz",
+      color: "bg-slate-600 hover:bg-slate-700",
+    },
+    {
+      title: "Recursive Binary Search Quiz",
+      description:
+        "Test your understanding of Recursive Binary Search with multiple-choice questions.",
+      href: "/visualizer/recursion/binary-search/quiz",
+      color: "bg-blue-700 hover:bg-blue-800",
+    },
+    {
+      title: "Tower of Hanoi Recursion Quiz",
+      description:
+        "Test your understanding of the Tower of Hanoi recursion algorithm with multiple-choice questions.",
+      href: "/visualizer/recursion/tower-of-hanoi/quiz",
+      color: "bg-violet-600 hover:bg-violet-700",
+    },
   ];
 
   const [searchQuery, setSearchQuery] = useState("");

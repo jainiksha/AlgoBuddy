@@ -27,7 +27,9 @@ import {
   ChevronRight,
   TrendingUp,
   Target,
-  ChevronLeft
+  ChevronLeft,
+  Users,
+  Calendar
 } from "lucide-react";
 import { useArenaProfile } from "@/app/hooks/useArenaProfile";
 import { useSheetProgress } from "@/app/hooks/useSheetProgress";
@@ -199,16 +201,7 @@ export default function ArenaPage() {
   const [duelSimulatorOpen, setDuelSimulatorOpen] = useState(false);
   const [selectedOpponent, setSelectedOpponent] = useState(null);
   const [activeDuelProblem, setActiveDuelProblem] = useState("Reverse Linked List");
-  const [showXPWidget, setShowXPWidget] = useState(true);
 
-   useEffect(() => {
-  if (typeof window !== "undefined") {
-    localStorage.setItem(
-      "arena-show-xp-widget",
-      JSON.stringify(showXPWidget)
-    );
-  }
-}, [showXPWidget]);
 
   const [currentUserStats, setCurrentUserStats] = useState({
     name: "",
@@ -612,21 +605,95 @@ export default function ArenaPage() {
                 )}
 
                 {activeTab === "ranked" && (
-                  <button
-                    onClick={() => openMatchmakingModal()}
-                    className="px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-bold shadow-md shadow-primary/10 transition"
-                  >
-                    Launch Ranked Matchmaking
-                  </button>
+                  <div className="w-full text-left space-y-6">
+                    <div>
+                      <h4 className="text-xl font-extrabold text-slate-800 dark:text-neutral-200 mb-1">Ranked Matchmaking</h4>
+                      <p className="text-xs text-slate-500 dark:text-neutral-400">Compete against similarly skilled opponents to climb the ranks.</p>
+                    </div>
+
+                    <div className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-6 flex flex-col items-center justify-center text-center">
+                      <div className="relative mb-6">
+                        <div className="w-32 h-32 rounded-full border-4 border-slate-200 dark:border-neutral-800 flex items-center justify-center shadow-inner bg-white dark:bg-neutral-800 relative z-10">
+                          <Trophy size={64} className="text-slate-400" />
+                        </div>
+                        <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent border-l-transparent transform rotate-45 z-20"></div>
+                      </div>
+                      
+                      <h3 className="text-2xl font-black text-slate-800 dark:text-neutral-200 uppercase tracking-widest mb-1">Unranked</h3>
+                      <p className="text-xs text-slate-500 font-bold mb-6">Play 5 placement matches to reveal your rank</p>
+
+                      <div className="w-full max-w-sm mb-6">
+                        <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-2">
+                          <span>Placement Progress</span>
+                          <span>0 / 5</span>
+                        </div>
+                        <div className="w-full h-2 bg-slate-200 dark:bg-neutral-800 rounded-full overflow-hidden">
+                          <div className="h-full w-0 bg-primary rounded-full transition-all duration-1000"></div>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => openMatchmakingModal()}
+                        className="px-8 py-3.5 bg-primary hover:bg-primary/90 text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/30 transition transform hover:-translate-y-0.5 active:translate-y-0"
+                      >
+                        Find Ranked Match
+                      </button>
+                    </div>
+                  </div>
                 )}
 
                 {activeTab === "friend" && (
-                  <button
-                    onClick={openCreateDuelModal}
-                    className="px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl text-xs font-bold shadow-md shadow-primary/10 transition"
-                  >
-                    Create Custom Lobby
-                  </button>
+                  <div className="w-full text-left space-y-6">
+                    <div>
+                      <h4 className="text-xl font-extrabold text-slate-800 dark:text-neutral-200 mb-1">Play with Friends</h4>
+                      <p className="text-xs text-slate-500 dark:text-neutral-400">Create a private lobby and invite your friends to a custom code duel.</p>
+                    </div>
+
+                    <div className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                          <h5 className="text-sm font-bold text-slate-800 dark:text-neutral-200">Lobby Settings</h5>
+                          
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Difficulty</label>
+                            <div className="flex gap-2">
+                              {["Easy", "Medium", "Hard"].map(diff => (
+                                <button key={diff} className={`flex-1 py-1.5 text-xs font-bold rounded-lg border ${diff === "Medium" ? "bg-primary/10 border-primary/30 text-primary" : "bg-white dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-400 hover:border-slate-300"}`}>
+                                  {diff}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Time Limit</label>
+                            <div className="flex gap-2">
+                              {["15m", "30m", "60m"].map(time => (
+                                <button key={time} className={`flex-1 py-1.5 text-xs font-bold rounded-lg border ${time === "30m" ? "bg-primary/10 border-primary/30 text-primary" : "bg-white dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-400 hover:border-slate-300"}`}>
+                                  {time}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4 flex flex-col">
+                          <h5 className="text-sm font-bold text-slate-800 dark:text-neutral-200">Invite Players</h5>
+                          
+                          <div className="flex-1 bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-xl p-4 flex flex-col items-center justify-center text-center space-y-3">
+                            <Users size={32} className="text-slate-300 dark:text-neutral-600" />
+                            <p className="text-[10px] text-slate-500 max-w-[150px]">Create the lobby to generate an invite code.</p>
+                            <button
+                              onClick={openCreateDuelModal}
+                              className="w-full py-2.5 bg-primary hover:bg-primary/90 text-white rounded-xl text-xs font-bold shadow-md shadow-primary/20 transition"
+                            >
+                              Generate Invite Link
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 )}
 
                 {activeTab === "leaderboard" && (
@@ -663,6 +730,116 @@ export default function ArenaPage() {
                         Leaderboard is currently empty.
                       </div>
                     )}
+                  </div>
+                )}
+                {activeTab === "history" && (
+                  <div className="w-full text-left space-y-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="text-sm font-bold text-slate-800 dark:text-neutral-200">Match History</h4>
+                      <input 
+                        type="text" 
+                        placeholder="Search opponent..." 
+                        className="text-xs px-3 py-1.5 rounded-lg border border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-900 focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                    {matchHistory && matchHistory.length > 0 ? (
+                      <div className="space-y-3">
+                        {matchHistory.map((b) => {
+                          const opponentName = b.opponentName;
+                          const topic = b.topic;
+                          const date = new Date(b.startTime).toLocaleDateString();
+                          const result = b.result;
+                          const xpAwarded = `+${b.xpAwarded} XP`;
+                          const ratingChange = b.ratingChange >= 0 ? `+${b.ratingChange} Rating` : `${b.ratingChange} Rating`;
+
+                          return (
+                            <div key={b.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-slate-100 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/50 rounded-xl gap-4 text-xs transition hover:border-slate-200 dark:hover:border-neutral-700">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1.5">
+                                  <span className="font-bold text-slate-700 dark:text-neutral-200 text-sm truncate">
+                                    You vs {opponentName}
+                                  </span>
+                                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                                    result === "Victory"
+                                      ? "bg-emerald-500/10 text-emerald-500"
+                                      : result === "Defeat" ? "bg-red-500/10 text-red-500" : "bg-slate-500/10 text-slate-500"
+                                  }`}>
+                                    {result}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-3 text-slate-500 dark:text-neutral-400">
+                                  <span className="flex items-center gap-1.5"><Target size={12} /> {topic}</span>
+                                  <span className="flex items-center gap-1.5"><Clock size={12} /> {date}</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-6 justify-between md:justify-end">
+                                <div className="text-left md:text-right">
+                                  <span className="font-bold text-primary dark:text-purple-400 block">{xpAwarded}</span>
+                                  <span className={`text-[11px] font-bold ${ratingChange.startsWith("+") ? "text-emerald-500" : "text-red-500"}`}>
+                                    {ratingChange}
+                                  </span>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    if (!ensureLoggedIn()) return;
+                                    handleWatchLive("You", opponentName, topic);
+                                  }}
+                                  className="px-4 py-2 bg-white hover:bg-slate-50 dark:bg-neutral-800 dark:hover:bg-neutral-700 border border-slate-200 dark:border-neutral-700 rounded-lg font-bold transition shadow-sm text-slate-700 dark:text-neutral-200"
+                                >
+                                  Replay
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="p-8 text-center text-sm font-semibold text-slate-500 dark:text-neutral-400 bg-slate-50 dark:bg-neutral-900/50 rounded-xl border border-dashed border-slate-200 dark:border-neutral-700">
+                        No match history available yet.
+                      </div>
+                    )}
+                  </div>
+                )}
+                {activeTab === "streak" && (
+                  <div className="w-full text-left space-y-6">
+                    <div>
+                      <h4 className="text-xl font-extrabold text-slate-800 dark:text-neutral-200 mb-1">Daily Streak</h4>
+                      <p className="text-xs text-slate-500 dark:text-neutral-400">Keep your learning momentum going by solving problems every day.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-5 text-center">
+                        <Flame size={32} className="mx-auto mb-2 text-amber-500 animate-pulse" />
+                        <div className="text-2xl font-black text-slate-800 dark:text-neutral-200">{streakData?.current || 0}</div>
+                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Current Streak</div>
+                      </div>
+                      <div className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-5 text-center">
+                        <Trophy size={32} className="mx-auto mb-2 text-primary" />
+                        <div className="text-2xl font-black text-slate-800 dark:text-neutral-200">{streakData?.longest || 0}</div>
+                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Longest Streak</div>
+                      </div>
+                      <div className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-5 text-center">
+                        <Calendar size={32} className="mx-auto mb-2 text-indigo-500" />
+                        <div className="text-2xl font-black text-slate-800 dark:text-neutral-200">14</div>
+                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Total Days Active</div>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-5">
+                      <h5 className="text-sm font-bold text-slate-800 dark:text-neutral-200 mb-4">Activity Heatmap (Last 30 Days)</h5>
+                      <div className="grid grid-cols-7 gap-2">
+                        {Array.from({ length: 30 }).map((_, i) => {
+                          const isActive = Math.random() > 0.4;
+                          return (
+                            <div 
+                              key={i} 
+                              className={`aspect-square rounded-lg transition ${isActive ? "bg-amber-400 dark:bg-amber-500" : "bg-slate-200 dark:bg-neutral-800"} hover:scale-110`}
+                              title={isActive ? "Active" : "Inactive"}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -775,12 +952,6 @@ export default function ArenaPage() {
               </div>
             </div>
 
-            <button
-  onClick={() => setShowXPWidget(!showXPWidget)}
-  className="text-xs text-primary font-semibold"
->
-  {showXPWidget ? "Hide XP Widget (deprecated)" : "Show XP Widget (deprecated)"}
-</button>
           </aside>
 
         </div>
