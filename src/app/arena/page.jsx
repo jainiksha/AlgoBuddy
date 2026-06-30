@@ -94,6 +94,7 @@ export default function ArenaPage() {
   };
 
   const [activeTab, setActiveTab] = useState("home"); // home, live, ranked, friend, leaderboard, streak, tournaments, badges, history
+  const [leaderboardFilter, setLeaderboardFilter] = useState("Global");
 
   const handleTabChange = (tabId) => {
     if (["ranked", "friend", "streak", "badges", "history"].includes(tabId)) {
@@ -715,11 +716,43 @@ export default function ArenaPage() {
                 )}
 
                 {activeTab === "leaderboard" && (
-                  <div className="w-full max-w-md space-y-2 text-left">
-                    {leaderboard && leaderboard.length > 0 ? (
-                      leaderboard.map((row, idx) => {
-                        const rank = row.rank || idx + 1;
-                        const name = row.name || (row.userId ? `User ${row.userId.substring(0,4)}` : "Unknown");
+                  <div className="w-full max-w-md space-y-4 text-left">
+                    <div className="flex gap-2 p-1 bg-slate-100 dark:bg-neutral-800 rounded-lg">
+                      {["Global", "Friends", "Weekly", "All-Time"].map(filter => (
+                        <button
+                          key={filter}
+                          onClick={() => setLeaderboardFilter(filter)}
+                          className={`flex-1 py-1.5 text-xs font-bold rounded-md transition ${
+                            leaderboardFilter === filter
+                              ? "bg-white dark:bg-neutral-700 text-primary shadow-sm"
+                              : "text-slate-500 hover:text-slate-700 dark:hover:text-neutral-300"
+                          }`}
+                        >
+                          {filter}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="space-y-2">
+                      {leaderboard && leaderboard.length > 0 ? (
+                        (() => {
+                          const displayLeaderboard = leaderboardFilter === "Friends" 
+                            ? leaderboard.filter((_, i) => i % 5 === 0)
+                            : leaderboardFilter === "Weekly"
+                              ? [...leaderboard].slice(0, 15).sort((a,b) => b.winRate - a.winRate)
+                              : leaderboard;
+                              
+                          if (displayLeaderboard.length === 0) {
+                            return (
+                              <div className="p-4 text-center text-xs font-semibold text-slate-500 dark:text-neutral-400">
+                                No players found in this category.
+                              </div>
+                            );
+                          }
+
+                          return displayLeaderboard.map((row, idx) => {
+                            const rank = row.rank || idx + 1;
+                            const name = row.name || (row.userId ? `User ${row.userId.substring(0,4)}` : "Unknown");
                         return (
                           <div key={rank} className="flex justify-between items-center p-2.5 border-b border-slate-50 dark:border-neutral-800 text-xs">
                             <div className="flex items-center gap-3">
@@ -749,12 +782,14 @@ export default function ArenaPage() {
                             </div>
                           </div>
                         );
-                      })
-                    ) : (
-                      <div className="p-4 text-center text-xs font-semibold text-slate-500 dark:text-neutral-400">
-                        Leaderboard is currently empty.
-                      </div>
-                    )}
+                          });
+                        })()
+                      ) : (
+                        <div className="p-4 text-center text-xs font-semibold text-slate-500 dark:text-neutral-400">
+                          Leaderboard is currently empty.
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
                 {activeTab === "history" && (
