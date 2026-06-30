@@ -19,72 +19,14 @@ export default function QuizPage() {
       color: "bg-indigo-600 hover:bg-indigo-700",
     },
     {
-      title: "Basic Recursion Quiz",
-      description:
-        "Test your understanding of Basic Recursion with multiple-choice questions.",
-      href: "/visualizer/recursion/basic-recursion/quiz",
-      color: "bg-teal-600 hover:bg-teal-700",
-    },
-    {
-      title: "Functional & Parameterized Recursion Quiz",
-      description:
-        "Test your understanding of Functional & Parameterized Recursion with multiple-choice questions.",
-      href: "/visualizer/recursion/functional-parameterized/quiz",
-      color: "bg-violet-600 hover:bg-violet-700",
-    },
-    {
-      title: "Multiple Recursive Calls Quiz",
-      description:
-        "Test your understanding of Multiple Recursive Calls with multiple-choice questions.",
-      href: "/visualizer/recursion/multiple-calls/quiz",
-      color: "bg-sky-600 hover:bg-sky-700",
-    },
-    {
-      title: "Recursion on Subsequences Quiz",
-      description:
-        "Test your understanding of Recursion on Subsequences with multiple-choice questions.",
-      href: "/visualizer/recursion/subsequences/quiz",
-      color: "bg-rose-600 hover:bg-rose-700",
-    },
-    {
-      title: "Backtracking Quiz",
-      description:
-        "Test your understanding of Backtracking with multiple-choice questions.",
-      href: "/visualizer/recursion/backtracking/quiz",
-      color: "bg-amber-600 hover:bg-amber-700",
-    },
-    {
-      title: "Recursion Trees Quiz",
-      description:
-        "Test your understanding of Recursion Trees with multiple-choice questions.",
-      href: "/visualizer/recursion/trees/quiz",
-      color: "bg-violet-600 hover:bg-violet-700",
-    },
-    {
-      title: "Call Stack Visualization Quiz",
-      description:
-        "Test your understanding of Call Stack Visualization with multiple-choice questions.",
-      href: "/visualizer/recursion/stack/quiz",
-      color: "bg-slate-600 hover:bg-slate-700",
-    },
-    {
-      title: "Recursive Binary Search Quiz",
-      description:
-        "Test your understanding of Recursive Binary Search with multiple-choice questions.",
-      href: "/visualizer/recursion/binary-search/quiz",
-      color: "bg-blue-700 hover:bg-blue-800",
-    },
-    {
-      title: "Tower of Hanoi Recursion Quiz",
-      description:
-        "Test your understanding of the Tower of Hanoi recursion algorithm with multiple-choice questions.",
-      href: "/visualizer/recursion/tower-of-hanoi/quiz",
-      color: "bg-violet-600 hover:bg-violet-700",
-    },
+        title: "Recursion Quiz",
+        description: "Practice all recursion topics.",
+        href: "/visualizer/recursion/quiz",
+        color: "bg-violet-600 hover:bg-violet-700",
+      },
     {
       title: "Stack Operations Quiz",
-      description:
-        "Test your understanding of Push & Pop, Peek, Is Empty, and Is Full operations.",
+      description:"Test your understanding of Push & Pop, Peek, Is Empty, and Is Full operations.",
       href: "/visualizer/stack/quiz",
       color: "bg-violet-600 hover:bg-violet-700",
     },
