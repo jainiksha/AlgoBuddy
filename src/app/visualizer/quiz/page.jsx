@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Layers, GitBranch, Terminal, HelpCircle, ArrowRight, Search } from "lucide-react";
+import { Layers, GitBranch, Terminal, HelpCircle, ArrowRight, Search, Network } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function QuizPage() {
@@ -106,6 +106,15 @@ export default function QuizPage() {
       btnBg: "bg-fuchsia-600 hover:bg-fuchsia-700 dark:bg-fuchsia-500 dark:hover:bg-fuchsia-600",
     },
     {
+      title: "Graph Algorithms Quiz",
+      description: "Test your understanding of Graph algorithms including BFS, DFS, Dijkstra, MST, and more.",
+      href: "/visualizer/graph/quiz",
+      icon: Network,
+      filename: "graph_algorithms_quiz.js",
+      cardBorder: "border-orange-500/20 dark:border-orange-500/30",
+      topBarBg: "bg-orange-500/10 dark:bg-orange-500/20",
+      iconStyle: "bg-orange-500/10 border border-orange-500/20 dark:border-orange-500/30 text-orange-600 dark:text-orange-400",
+      btnBg: "bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600",
       title: "Queue Types Quiz",
       description:
         "Practice Single Ended Queue, Double Ended Queue, Circular Queue, and Priority Queue concepts.",
