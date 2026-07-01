@@ -105,39 +105,6 @@ export default function QuizPage() {
       iconStyle: "bg-fuchsia-500/10 border border-fuchsia-500/20 dark:border-fuchsia-500/30 text-fuchsia-600 dark:text-fuchsia-400",
       btnBg: "bg-fuchsia-600 hover:bg-fuchsia-700 dark:bg-fuchsia-500 dark:hover:bg-fuchsia-600",
     },
-    {
-      title: "Queue Types Quiz",
-      description: "Test your understanding of Single, Double Ended, Circular, Priority Queues.",
-      href: "/visualizer/queue/types/quiz",
-      icon: Layers,
-      filename: "queue_types_quiz.js",
-      cardBorder: "border-teal-500/20 dark:border-teal-500/30",
-      topBarBg: "bg-fuchsia-500/10 dark:bg-fuchsia-500/20",
-      iconStyle: "bg-fuchsia-500/10 border border-fuchsia-500/20 dark:border-fuchsia-500/30 text-fuchsia-600 dark:text-fuchsia-400",
-      btnBg: "bg-fuchsia-600 hover:bg-fuchsia-700 dark:bg-fuchsia-500 dark:hover:bg-fuchsia-600",
-    },
-    {
-      title: "Queue Implementation Quiz",
-      description: "Test your understanding of Queue implementation Using Arrays, Linked Lists.",
-      href: "/visualizer/queue/implementation/quiz",
-      icon: Layers,
-      filename: "queue_implementation_quiz.js",
-      cardBorder: "border-teal-500/20 dark:border-teal-500/30",
-      topBarBg: "bg-fuchsia-500/10 dark:bg-fuchsia-500/20",
-      iconStyle: "bg-fuchsia-500/10 border border-fuchsia-500/20 dark:border-fuchsia-500/30 text-fuchsia-600 dark:text-fuchsia-400",
-      btnBg: "bg-fuchsia-600 hover:bg-fuchsia-700 dark:bg-fuchsia-500 dark:hover:bg-fuchsia-600",
-    },
-    {
-      title: "HashMap Quiz",
-      description: "Test your understanding of HashMap implementation.",
-      href: "/visualizer/hashmap/quiz",
-      icon: Layers,
-      filename: "hashmap_quiz.js",
-      cardBorder: "border-blue-500/20 dark:border-blue-500/30",
-      topBarBg: "border-blue-500/20dark:border-blue-500/30",
-      iconStyle: "bg-blue-500/10 border border-blue-500/20 dark:border-blue-500/30 text-blue-600 dark:text-blue-400",
-      btnBg: "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600",
-    }
   ];
 
   return (
