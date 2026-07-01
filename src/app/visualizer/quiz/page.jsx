@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Layers, GitBranch, Terminal, HelpCircle, ArrowRight, Search, Network } from "lucide-react";
+import { Layers, GitBranch, Terminal, HelpCircle, ArrowRight, Search, Network, Brain } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function QuizPage() {
@@ -115,6 +115,8 @@ export default function QuizPage() {
       topBarBg: "bg-orange-500/10 dark:bg-orange-500/20",
       iconStyle: "bg-orange-500/10 border border-orange-500/20 dark:border-orange-500/30 text-orange-600 dark:text-orange-400",
       btnBg: "bg-orange-600 hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600",
+    },
+    {
       title: "Queue Types Quiz",
       description:
         "Practice Single Ended Queue, Double Ended Queue, Circular Queue, and Priority Queue concepts.",
@@ -148,6 +150,20 @@ export default function QuizPage() {
 
       btnBg:
         "bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600",
+    },
+    {
+      title: "Dynamic Programming Quiz",
+      description:
+        "Test your understanding of DP concepts including Memoization, Tabulation, Knapsack, and LCS.",
+      href: "/visualizer/dp/quiz",
+      icon: Brain,
+      filename: "dynamic_programming_quiz.js",
+      cardBorder: "border-rose-500/20 dark:border-rose-500/30",
+      topBarBg: "bg-rose-500/10 dark:bg-rose-500/20",
+      iconStyle:
+        "bg-rose-500/10 border border-rose-500/20 dark:border-rose-500/30 text-rose-600 dark:text-rose-400",
+      btnBg:
+        "bg-rose-600 hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-600",
     },
   ];
 
