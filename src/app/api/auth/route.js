@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { Redis } from "@upstash/redis";
-import { checkRateLimit } from "@/lib/rateLimit";
+import { checkRateLimit, shouldBypassRateLimit } from "@/lib/rateLimit";
 import { getClientIp } from "@/lib/getClientIp";
 import { verifyTurnstile } from "@/lib/verifyTurnstile";
 import { jsonResponse, errorResponse, getSupabaseAdmin } from "@/lib/serverApi";
@@ -311,8 +311,7 @@ export async function POST(req) {
       checkRateLimit(`${AUTH_RATE_LIMIT_PREFIX}:${actionName}:email:${normalizedEmail}`),
     ]);
 
-    const isDev = process.env.NODE_ENV !== "production";
-    if (!isDev && (!ipLimit.allowed || !emailLimit.allowed)) {
+    if (!ipLimit.allowed || !emailLimit.allowed) {
       return jsonResponse({ success: false, message: "Too many attempts. Please wait and try again." }, 429);
     }
 
@@ -353,8 +352,7 @@ export async function POST(req) {
     }
 
     if (action === "login") {
-      const isDev = process.env.NODE_ENV !== "production";
-      if (!isDev && await isEmailLocked(normalizedEmail)) {
+      if (!shouldBypassRateLimit() && await isEmailLocked(normalizedEmail)) {
         return jsonResponse({ success: false, message: "Too many failed login attempts. Please try again later." }, 429);
       }
 
