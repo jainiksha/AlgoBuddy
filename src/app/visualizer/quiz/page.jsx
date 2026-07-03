@@ -284,6 +284,20 @@ export default function QuizPage() {
         "bg-sky-600 hover:bg-sky-700 dark:bg-sky-500 dark:hover:bg-sky-600",
     },
     {
+      title: "Graph Algorithms Quiz",
+      description:
+        "Practice Dijkstra's, Floyd-Warshall, Prim's, Kruskal's, and Topological Sort algorithms.",
+      href: "/visualizer/graph/algorithms/quiz",
+      filename: "graph_algorithms_quiz.js",
+      icon: Network,
+      cardBorder: "border-indigo-500/20 dark:border-indigo-500/30",
+      topBarBg: "bg-indigo-500/10 dark:bg-indigo-500/20",
+      iconStyle:
+        "bg-indigo-500/10 border border-indigo-500/20 dark:border-indigo-500/30 text-indigo-600 dark:text-indigo-400",
+      btnBg:
+        "bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600",
+    },
+    {
       title: "Dynamic Programming Quiz",
       description:
         "Test your understanding of DP concepts including Memoization, Tabulation, Knapsack, and LCS.",
