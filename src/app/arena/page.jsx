@@ -111,6 +111,12 @@ export default function ArenaPage() {
     }
   };
 
+  const rankedMatches = matchHistory?.filter(m => m.mode === 'ranked' || m.isRanked) || [];
+  const recentForm = rankedMatches.slice(0, 5).reverse().map(m => (m.winner === user?.id || m.result === 'win') ? 'W' : 'L');
+  while (recentForm.length < 5) {
+    recentForm.unshift('-');
+  }
+
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace("#", "");
@@ -644,7 +650,19 @@ export default function ArenaPage() {
                       </div>
                       
                       <h3 className="text-2xl font-black text-slate-800 dark:text-neutral-200 uppercase tracking-widest mb-1">Unranked</h3>
-                      <p className="text-xs text-slate-500 font-bold mb-6">Play 5 placement matches to reveal your rank</p>
+                      <p className="text-xs text-slate-500 font-bold mb-4">Play 5 placement matches to reveal your rank</p>
+
+                      <div className="flex items-center gap-1.5 mb-6">
+                        {recentForm.map((result, i) => (
+                          <div key={i} className={`w-7 h-7 rounded flex items-center justify-center text-xs font-bold text-white shadow-sm ${
+                            result === 'W' ? 'bg-emerald-500' : 
+                            result === 'L' ? 'bg-rose-500' : 
+                            'bg-slate-200 dark:bg-neutral-800 text-slate-400 dark:text-slate-500'
+                          }`}>
+                            {result}
+                          </div>
+                        ))}
+                      </div>
 
                       <div className="w-full max-w-sm mb-6">
                         <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-2">
