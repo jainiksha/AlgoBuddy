@@ -102,6 +102,19 @@ export default function ArenaPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedRow, setExpandedRow] = useState(null);
 
+  const calculateRank = (xp) => {
+    if (xp >= 10000) return { name: "Grandmaster", Icon: Crown, color: "text-purple-500", ringColor: "border-purple-500" };
+    if (xp >= 5000) return { name: "Diamond", Icon: Award, color: "text-indigo-500", ringColor: "border-indigo-500" };
+    if (xp >= 2500) return { name: "Platinum", Icon: Star, color: "text-cyan-500", ringColor: "border-cyan-500" };
+    if (xp >= 1000) return { name: "Gold", Icon: ShieldCheck, color: "text-yellow-500", ringColor: "border-yellow-500" };
+    if (xp >= 500) return { name: "Silver", Icon: ShieldAlert, color: "text-slate-400", ringColor: "border-slate-400" };
+    return { name: "Bronze", Icon: Shield, color: "text-amber-700", ringColor: "border-amber-700" };
+  };
+
+  const rankedMatches = matchHistory?.filter(m => m.mode === 'ranked' || m.isRanked) || [];
+  const currentRank = rankedMatches.length >= 5 ? calculateRank(profile?.xp || 0) : { name: "Unranked", Icon: Trophy, color: "text-slate-400", ringColor: "border-primary" };
+  const RankIcon = currentRank.Icon;
+
   const handleTabChange = (tabId) => {
     if (["ranked", "friend", "streak", "badges", "history"].includes(tabId)) {
       if (!ensureLoggedIn()) return;
@@ -644,30 +657,22 @@ export default function ArenaPage() {
                     </div>
 
                     <div className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-6 flex flex-col items-center justify-center text-center">
-                      <div className="relative mb-6 w-32 h-32 flex items-center justify-center">
-                        <svg className="absolute inset-0 w-full h-full transform -rotate-90 z-20 pointer-events-none" viewBox="0 0 128 128">
-                          <circle cx="64" cy="64" r="62" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-slate-200 dark:text-neutral-800" />
-                          <circle cx="64" cy="64" r="62" stroke="currentColor" strokeWidth="4" fill="transparent" strokeDasharray={ringCircumference} strokeDashoffset={ringDashoffset} strokeLinecap="round" className="text-primary transition-all duration-1000 ease-out" />
-                        </svg>
-                        <div className="w-[120px] h-[120px] rounded-full flex items-center justify-center shadow-inner bg-white dark:bg-neutral-800 relative z-10">
-                          <Trophy size={56} className="text-slate-400" />
+                      <div className="relative mb-6">
+                        <div className="w-32 h-32 rounded-full border-4 border-slate-200 dark:border-neutral-800 flex items-center justify-center shadow-inner bg-white dark:bg-neutral-800 relative z-10">
+                          <RankIcon size={64} className={currentRank.color} />
                         </div>
+                        <div className={`absolute inset-0 rounded-full border-4 ${currentRank.ringColor} border-t-transparent border-l-transparent transform rotate-45 z-20`}></div>
                       </div>
+                      
+                      <h3 className={`text-2xl font-black uppercase tracking-widest mb-1 ${currentRank.color === 'text-slate-400' ? 'text-slate-800 dark:text-neutral-200' : currentRank.color}`}>{currentRank.name}</h3>
+                      <p className="text-xs text-slate-500 font-bold mb-6">
+                        {rankedMatches.length >= 5 ? `${profile?.xp || 0} Rating` : "Play 5 placement matches to reveal your rank"}
+                      </p>
 
-                      <div className="flex flex-col gap-3">
-                        <div className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-4 flex flex-col items-center justify-center text-center flex-1">
-                          <TrendingUp size={20} className="text-blue-500 mb-2" />
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Win Rate</span>
-                          <span className="text-lg font-black text-slate-800 dark:text-neutral-200 mt-1">
-                            {rankedMatches.length > 0 
-                              ? `${Math.round((rankedMatches.filter(m => m.winner === user?.id || m.result === 'win').length / rankedMatches.length) * 100)}%`
-                              : "0%"}
-                          </span>
-                        </div>
-                        <div className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-4 flex flex-col items-center justify-center text-center flex-1">
-                          <Target size={20} className="text-emerald-500 mb-2" />
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Peak Rating</span>
-                          <span className="text-lg font-black text-slate-800 dark:text-neutral-200 mt-1">{profile?.stats?.peakRating || profile?.rating || 1200}</span>
+                      <div className="w-full max-w-sm mb-6">
+                        <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-2">
+                          <span>Placement Progress</span>
+                          <span>0 / 5</span>
                         </div>
                         <div className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-4 flex flex-col items-center justify-center text-center flex-1">
                           <Flame size={20} className="text-orange-500 mb-2" />
