@@ -729,6 +729,14 @@ export default function ArenaPage() {
                           <h5 className="text-sm font-bold text-slate-800 dark:text-neutral-200">Lobby Settings</h5>
                           
                           <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Mode</label>
+                            <div className="flex gap-2">
+                              <button className="flex-1 py-1.5 text-xs font-bold rounded-lg border bg-primary/10 border-primary/30 text-primary">Standard</button>
+                              <button className="flex-1 py-1.5 text-xs font-bold rounded-lg border bg-white dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-400 hover:border-slate-300">Optimization</button>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
                             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Topic</label>
                             <select
                               value={duelTopic}
