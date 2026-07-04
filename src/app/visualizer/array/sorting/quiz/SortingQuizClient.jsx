@@ -38,21 +38,24 @@ export default function SortingQuizClient() {
     },
     {
       title: "Shell Sort Quiz",
+      href: "/visualizer/array/sorting/quiz/shellsort",
+      filename: "shell_sort_quiz.js",
       description:
-        "Practice Shell Sort algorithm, gap sequences, complexity, and applications.",
-      href: "/visualizer/sorting/quiz/shell-sort",
+        "Test your understanding of Shell Sort, gap sequences, insertion-based sorting, and algorithm optimization.",
     },
     {
       title: "Bucket Sort Quiz",
+      href: "/visualizer/array/sorting/quiz/bucket-sort",
+      filename: "bucket_sort_quiz.js",
       description:
-        "Practice Shell Sort algorithm, gap sequences, complexity, and applications.",
-      href: "/visualizer/sorting/quiz/shell-sort",
+        "Test your understanding of bucket distribution, sorting within buckets, complexity, and Bucket Sort applications.",
     },
     {
       title: "Tim Sort Quiz",
-      description:
-        "Practice Tim Sort, runs, hybrid sorting, complexity, stability, and applications.",
       href: "/visualizer/array/sorting/quiz/timsort",
+      filename: "tim_sort_quiz.js",
+      description:
+        "Test your understanding of Tim Sort, runs, hybrid sorting, merge operations, and adaptive sorting techniques.",
     },
     {
       title: "Heap Sort Quiz",
