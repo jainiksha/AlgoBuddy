@@ -782,6 +782,18 @@ export default function ArenaPage() {
                         </div>
                       </div>
                     </div>
+
+                    <div className="bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-6 mt-4">
+                      <div className="flex flex-col md:flex-row gap-6 items-center">
+                        <div className="flex-1 space-y-2">
+                          <h5 className="text-sm font-bold text-slate-800 dark:text-neutral-200">Join an Existing Lobby</h5>
+                          <p className="text-xs text-slate-500">Have an invite code from a friend? Enter it below to join their custom duel.</p>
+                        </div>
+                        <div className="w-full md:w-auto flex flex-col sm:flex-row gap-2">
+                          {/* Join code input will go here */}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 
