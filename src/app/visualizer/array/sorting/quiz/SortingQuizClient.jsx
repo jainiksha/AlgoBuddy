@@ -38,7 +38,7 @@ export default function SortingQuizClient() {
     },
     {
       title: "Shell Sort Quiz",
-      href: "/visualizer/array/sorting/quiz/shellsort",
+      href: "/visualizer/array/sorting/quiz/shell-sort",
       filename: "shell_sort_quiz.js",
       description:
         "Test your understanding of Shell Sort, gap sequences, insertion-based sorting, and algorithm optimization.",
