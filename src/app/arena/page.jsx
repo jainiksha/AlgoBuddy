@@ -204,6 +204,7 @@ export default function ArenaPage() {
   const [createDuelOpen, setCreateDuelOpen] = useState(false);
   const [duelDifficulty, setDuelDifficulty] = useState("Medium");
   const [duelTime, setDuelTime] = useState("30m");
+  const [duelTopic, setDuelTopic] = useState("Random");
 
   // Fix for browser back button from Matchmaking modal (Issue #1333)
   // Fix for browser back button from Create Duel modal (Issue #1336)
@@ -717,6 +718,23 @@ export default function ArenaPage() {
                         <div className="space-y-4">
                           <h5 className="text-sm font-bold text-slate-800 dark:text-neutral-200">Lobby Settings</h5>
                           
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Topic</label>
+                            <select
+                              value={duelTopic}
+                              onChange={(e) => setDuelTopic(e.target.value)}
+                              className="w-full py-2 px-3 text-xs font-bold rounded-lg border bg-white dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-300 focus:outline-none focus:border-primary/50 transition"
+                            >
+                              <option value="Random">Random</option>
+                              <option value="Arrays">Arrays</option>
+                              <option value="Strings">Strings</option>
+                              <option value="Hash Tables">Hash Tables</option>
+                              <option value="Two Pointers">Two Pointers</option>
+                              <option value="Dynamic Programming">Dynamic Programming</option>
+                              <option value="Graphs">Graphs</option>
+                            </select>
+                          </div>
+
                           <div className="space-y-2">
                             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Difficulty</label>
                             <div className="flex gap-2">
