@@ -202,6 +202,7 @@ export default function ArenaPage() {
   const [matchmakingOpen, setMatchmakingOpen] = useState(false);
   const [matchmakingOptions, setMatchmakingOptions] = useState({});
   const [createDuelOpen, setCreateDuelOpen] = useState(false);
+  const [duelDifficulty, setDuelDifficulty] = useState("Medium");
 
   // Fix for browser back button from Matchmaking modal (Issue #1333)
   // Fix for browser back button from Create Duel modal (Issue #1336)
@@ -719,7 +720,11 @@ export default function ArenaPage() {
                             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Difficulty</label>
                             <div className="flex gap-2">
                               {["Easy", "Medium", "Hard"].map(diff => (
-                                <button key={diff} className={`flex-1 py-1.5 text-xs font-bold rounded-lg border ${diff === "Medium" ? "bg-primary/10 border-primary/30 text-primary" : "bg-white dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-400 hover:border-slate-300"}`}>
+                                <button 
+                                  key={diff} 
+                                  onClick={() => setDuelDifficulty(diff)}
+                                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg border ${duelDifficulty === diff ? "bg-primary/10 border-primary/30 text-primary" : "bg-white dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-400 hover:border-slate-300"}`}
+                                >
                                   {diff}
                                 </button>
                               ))}
