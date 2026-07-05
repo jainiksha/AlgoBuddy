@@ -206,6 +206,7 @@ export default function ArenaPage() {
   const [duelTime, setDuelTime] = useState("30m");
   const [duelTopic, setDuelTopic] = useState("Random");
   const [joinCode, setJoinCode] = useState("");
+  const [duelWager, setDuelWager] = useState(50);
 
   const handleJoinLobby = () => {
     if (joinCode.length !== 6) {
@@ -777,15 +778,15 @@ export default function ArenaPage() {
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
                               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">XP Wager</label>
-                              <span className="text-xs font-bold text-primary">50 XP</span>
+                              <span className="text-xs font-bold text-primary">{duelWager} XP</span>
                             </div>
                             <input 
                               type="range" 
                               min="0" 
                               max="500" 
                               step="10" 
-                              value={50}
-                              readOnly
+                              value={duelWager}
+                              onChange={(e) => setDuelWager(Number(e.target.value))}
                               className="w-full accent-primary h-1.5 bg-slate-200 dark:bg-neutral-700 rounded-lg appearance-none cursor-pointer"
                             />
                             <div className="flex justify-between text-[9px] text-slate-400 font-bold px-1">
