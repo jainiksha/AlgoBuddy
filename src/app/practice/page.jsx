@@ -427,9 +427,9 @@ export default function PracticePage() {
   return (
     <div className="min-h-screen bg-slate-50/50 dark:bg-neutral-900 text-slate-800 dark:text-neutral-200 transition-colors duration-300">
       
-      <div className="max-w-[1440px] mx-auto px-4 md:px-8 py-8 flex flex-col lg:flex-row gap-y-8 lg:gap-0">
+      <div className="max-w-[1440px] mx-auto px-4 md:px-8 py-8 flex flex-col lg:flex-row lg:items-start gap-y-8 lg:gap-0">
 
-    <div className="w-full lg:w-[280px] flex flex-col gap-6">
+    <div className="w-full lg:w-[280px] flex flex-col gap-6 self-start">
 
         <PracticeSidebar
             activeView={activeView}
