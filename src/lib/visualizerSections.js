@@ -33,7 +33,8 @@ export const sections = [
           { name: "Linear Search", path: "/visualizer/array/linearsearch" },
           { name: "Binary Search", path: "/visualizer/array/binarysearch" },
           { name: "Ternary Search", path: "/visualizer/array/ternary-search" },
-          { name: "Jump Search", path: "/visualizer/array/jump-search" }
+          { name: "Jump Search", path: "/visualizer/array/jump-search" },
+          { name: "Fibonacci Search", path: "/visualizer/array/fibonacci-search" },
         ],
       },
       {
