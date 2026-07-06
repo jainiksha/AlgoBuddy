@@ -675,6 +675,14 @@ const sections = [
             name: "Topological Sort",
             path: "/visualizer/graph/topological-sort",
           },
+          {
+            name: "Bellman-Ford Algorithm",
+            path: "/visualizer/graph/bellman-ford",
+          },
+          {
+            name: "Kosaraju's Algorithm",
+            path: "/visualizer/graph/kosaraju",
+          },
         ],
       },
     ],
