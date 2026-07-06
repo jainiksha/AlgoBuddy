@@ -197,17 +197,3 @@ BEGIN
   RETURN QUERY SELECT v_current, v_longest;
 END;
 $$;
-
--- ====================================================================
--- global_leaderboard view for Global Learning Leaderboard System
--- ====================================================================
-CREATE OR REPLACE VIEW global_leaderboard AS
-SELECT 
-  up.id AS user_id,
-  up.full_name,
-  up.avatar_url,
-  COUNT(prog.problem_id) * 10 AS score
-FROM user_profiles up
-LEFT JOIN user_progress prog ON up.id = prog.user_id AND prog.status = 'Completed'
-GROUP BY up.id, up.full_name, up.avatar_url
-ORDER BY score DESC;
