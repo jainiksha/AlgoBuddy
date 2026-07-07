@@ -27,7 +27,7 @@ export default function DuelLobbyPage({ params }) {
   }
 
   const [copied, setCopied] = useState(false);
-  const lobbyCode = "XXXXXX"; // Will be dynamic in the next PR
+  const lobbyCode = params.id; 
 
   const handleCopy = async () => {
     try {
