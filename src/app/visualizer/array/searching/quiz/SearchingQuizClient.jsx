@@ -41,6 +41,14 @@ export default function SearchingQuizClient() {
       filename: "fibonacci_search_quiz.js",
       themeColor: "from-amber-500 to-orange-600",
     },
+    {
+      title: "Interpolation Search Quiz",
+      description:
+        "Practice Interpolation Search concepts, interpolation formula, complexity, and applications.",
+      href: "/visualizer/array/interpolation-search/quiz",
+      filename: "interpolation_search_quiz.js",
+      themeColor: "from-cyan-500 to-blue-600",
+    },
   ];
 
   return (
