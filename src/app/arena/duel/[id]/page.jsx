@@ -11,6 +11,21 @@ export default function DuelLobbyPage({ params }) {
   const [simulatorOpen, setSimulatorOpen] = useState(false);
   const [opponent, setOpponent] = useState(null);
 
+  // Mock socket "player joined"
+  useEffect(() => {
+    if (user) {
+      const timer = setTimeout(() => {
+        setOpponent({
+          name: "Friend_123",
+          rating: 1650,
+          level: 16,
+          avatar: "FR"
+        });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [user]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-neutral-900">
@@ -61,14 +76,25 @@ export default function DuelLobbyPage({ params }) {
         </div>
 
         {/* Player 2 */}
-        <div className="flex flex-col items-center bg-slate-100 dark:bg-neutral-800/50 p-8 rounded-3xl border-2 border-dashed border-slate-300 dark:border-neutral-700 w-64 relative overflow-hidden">
-          <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(0,0,0,0.05)_50%,transparent_75%,transparent_100%)] dark:bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.02)_50%,transparent_75%,transparent_100%)] bg-[length:20px_20px] animate-[slide_1s_linear_infinite]" />
-          <div className="w-24 h-24 bg-slate-200 dark:bg-neutral-700 rounded-full flex items-center justify-center mb-4 animate-pulse relative z-10">
-            <div className="w-12 h-12 border-4 border-slate-300 dark:border-neutral-600 border-t-slate-500 dark:border-t-neutral-400 rounded-full animate-spin" />
+        {/* Player 2 */}
+        {opponent ? (
+          <div className="flex flex-col items-center bg-white dark:bg-neutral-800 p-8 rounded-3xl shadow-xl border border-primary/30 w-64">
+            <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-4 ring-4 ring-primary/20">
+              <span className="text-3xl font-black text-primary">{opponent.avatar}</span>
+            </div>
+            <h3 className="text-xl font-bold text-slate-800 dark:text-neutral-200 truncate w-full text-center">{opponent.name}</h3>
+            <span className="text-xs font-bold text-emerald-500 uppercase tracking-widest mt-1">Ready</span>
           </div>
-          <h3 className="text-lg font-bold text-slate-600 dark:text-neutral-400 relative z-10">Waiting for opponent...</h3>
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1 relative z-10">Searching</span>
-        </div>
+        ) : (
+          <div className="flex flex-col items-center bg-slate-100 dark:bg-neutral-800/50 p-8 rounded-3xl border-2 border-dashed border-slate-300 dark:border-neutral-700 w-64 relative overflow-hidden">
+            <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(0,0,0,0.05)_50%,transparent_75%,transparent_100%)] dark:bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.02)_50%,transparent_75%,transparent_100%)] bg-[length:20px_20px] animate-[slide_1s_linear_infinite]" />
+            <div className="w-24 h-24 bg-slate-200 dark:bg-neutral-700 rounded-full flex items-center justify-center mb-4 animate-pulse relative z-10">
+              <div className="w-12 h-12 border-4 border-slate-300 dark:border-neutral-600 border-t-slate-500 dark:border-t-neutral-400 rounded-full animate-spin" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-600 dark:text-neutral-400 relative z-10">Waiting for opponent...</h3>
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1 relative z-10">Searching</span>
+          </div>
+        )}
       </div>
 
       <div className="bg-white dark:bg-neutral-800 border border-slate-100 dark:border-neutral-800/80 rounded-2xl p-6 shadow-sm w-full max-w-md text-center">
@@ -86,6 +112,17 @@ export default function DuelLobbyPage({ params }) {
           {copied ? "Link Copied!" : "Copy Invite Link"}
         </button>
       </div>
+
+      {opponent && (
+        <div className="mt-8">
+          <button
+            onClick={() => setSimulatorOpen(true)}
+            className="px-12 py-4 bg-primary hover:bg-primary-dark text-white rounded-2xl text-lg font-black transition-all shadow-xl shadow-primary/30 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/40 animate-bounce"
+          >
+            START MATCH
+          </button>
+        </div>
+      )}
 
       <DuelSimulatorModal
         isOpen={simulatorOpen}
