@@ -35,6 +35,7 @@ export const sections = [
           { name: "Ternary Search", path: "/visualizer/array/ternary-search" },
           { name: "Jump Search", path: "/visualizer/array/jump-search" },
           { name: "Fibonacci Search", path: "/visualizer/array/fibonacci-search" },
+          { name: "Exponential Search", path: "/visualizer/array/exponential-search" },
         ],
       },
       {

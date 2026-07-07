@@ -41,6 +41,14 @@ export default function SearchingQuizClient() {
       filename: "fibonacci_search_quiz.js",
       themeColor: "from-amber-500 to-orange-600",
     },
+    {
+      title: "Exponential Search Quiz",
+      description:
+        "Practice Exponential Search concepts, range expansion, Binary Search integration, and time complexities.",
+      href: "/visualizer/array/exponential-search/quiz",
+      filename: "exponential_search_quiz.js",
+      themeColor: "from-orange-500 to-red-600",
+    },
   ];
 
   return (
