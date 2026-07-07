@@ -76,6 +76,9 @@ const VISUALIZERS = [
 
   // Hash Map
   { name: "Hash Map",                            path: "/visualizer/hashmap",                                  category: "Hash Map"   },
+
+  // Bit Manipulation
+  { name: "Bit Manipulation Quiz",               path: "/visualizer/bit-manipulation/quiz",                    category: "Bit Manipulation" },
 ];
 
 // ─── Site Pages ─────────────────────────────────────────────────────────────

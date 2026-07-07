@@ -49,6 +49,14 @@ export default function SearchingQuizClient() {
       filename: "exponential_search_quiz.js",
       themeColor: "from-orange-500 to-red-600",
     },
+    {
+      title: "Interpolation Search Quiz",
+      description:
+        "Practice Interpolation Search concepts, interpolation formula, complexity, and applications.",
+      href: "/visualizer/array/interpolation-search/quiz",
+      filename: "interpolation_search_quiz.js",
+      themeColor: "from-cyan-500 to-blue-600",
+    },
   ];
 
   return (

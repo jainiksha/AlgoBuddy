@@ -36,6 +36,7 @@ export const sections = [
           { name: "Jump Search", path: "/visualizer/array/jump-search" },
           { name: "Fibonacci Search", path: "/visualizer/array/fibonacci-search" },
           { name: "Exponential Search", path: "/visualizer/array/exponential-search" },
+          { name: "Interpolation Search", path: "/visualizer/array/interpolation-search"},
         ],
       },
       {

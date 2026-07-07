@@ -24,9 +24,9 @@ export default function PracticeRightSidebar({
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   return (
-    <aside className="w-full flex-shrink-0 flex flex-col gap-6 select-none self-start">
+    <aside className="w-full h-full flex-shrink-0 flex flex-col gap-6 select-none">
       {/* Session Progress Card */}
-      <div className="bg-white dark:bg-[#1a1b1e] border border-slate-100 dark:border-neutral-800/80 rounded-2xl p-5 shadow-sm flex flex-col">
+      <div className="bg-white dark:bg-[#1a1b1e] border border-slate-100 dark:border-neutral-800/80 rounded-2xl p-5 shadow-sm h-full flex flex-col justify-between">
         <h3 className="text-xs font-black text-slate-800 dark:text-neutral-200 uppercase tracking-widest mb-4">
           Session Progress
         </h3>

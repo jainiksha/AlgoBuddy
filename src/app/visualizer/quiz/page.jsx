@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Layers, GitBranch, Terminal, HelpCircle, ArrowRight, Search, Network, Brain, TreePine, Hash } from "lucide-react";
+import { Layers, GitBranch, Terminal, HelpCircle, ArrowRight, Search, Network, Brain, TreePine, Hash, Cpu } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function QuizPage() {
@@ -275,7 +275,7 @@ export default function QuizPage() {
     {
       title: "Graph Algorithms Quiz",
       description:
-        "Practice Dijkstra's, Floyd-Warshall, Prim's, Kruskal's, and Topological Sort algorithms.",
+        "Practice Dijkstra's, Bellman-Ford, Floyd-Warshall, Prim's, Kruskal's, and Topological Sort algorithms.",
       href: "/visualizer/graph/algorithms/quiz",
       filename: "graph_algorithms_quiz.js",
       icon: Network,
@@ -300,6 +300,34 @@ export default function QuizPage() {
       btnBg:
         "bg-rose-600 hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-600",
     },
+    {
+      title: "Bit Manipulation Quiz",
+      description:
+        "Test your understanding of binary representations, bitwise operators (&, |, ^, ~, <<, >>), setting/clearing/toggling bits, power of two, Kernighan's algorithm, and bitmasking.",
+      href: "/visualizer/bit-manipulation/quiz",
+      icon: Cpu,
+      filename: "bit_manipulation_quiz.js",
+      cardBorder: "border-violet-500/20 dark:border-violet-500/30",
+      topBarBg: "bg-violet-500/10 dark:bg-violet-500/20",
+      iconStyle:
+        "bg-violet-500/10 border border-violet-500/20 dark:border-violet-500/30 text-violet-600 dark:text-violet-400",
+      btnBg:
+        "bg-violet-600 hover:bg-violet-700 dark:bg-violet-500 dark:hover:bg-violet-600",
+    },
+    {
+      title: "Sliding Window Quiz",
+      description:
+        "Test your understanding of the sliding window technique, fixed vs variable size windows, and contiguous subarrays.",
+      href: "/visualizer/array/Interview-Patterns/quiz/slidingWindow",
+      icon: Terminal,
+      filename: "sliding_window_quiz.js",
+      cardBorder: "border-cyan-500/20 dark:border-cyan-500/30",
+      topBarBg: "bg-cyan-500/10 dark:bg-cyan-500/20",
+      iconStyle:
+        "bg-cyan-500/10 border border-cyan-500/20 dark:border-cyan-500/30 text-cyan-600 dark:text-cyan-400",
+      btnBg:
+        "bg-cyan-600 hover:bg-cyan-700 dark:bg-cyan-500 dark:hover:bg-cyan-600",
+    },
   ];
   return (
     <div className="min-h-screen bg-white dark:bg-[#1c1d1f] text-[var(--udemy-text)] dark:text-white transition-colors duration-300 pb-20">
@@ -318,7 +346,7 @@ export default function QuizPage() {
             const IconComponent = quiz.icon;
             return (
               <motion.div
-                key={quiz.title}
+                key={quiz.href}
                 initial={{ opacity: 0, y: 24 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: index * 0.05, ease: [0.22, 1, 0.36, 1] }}
