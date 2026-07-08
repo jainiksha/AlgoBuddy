@@ -1,7 +1,5 @@
-// src/app/hooks/useAuth.js
-"use client";
 import { useContext } from "react";
-import { AuthContext } from "@/app/context/AuthContext"; // Adjust based on your auth setup
+import { AuthContext } from "../context/AuthContext"; // Use relative import
 
 export function useAuth() {
   const context = useContext(AuthContext);
