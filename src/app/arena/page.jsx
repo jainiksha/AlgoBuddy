@@ -1215,7 +1215,6 @@ export default function ArenaPage() {
                             <span className="h-5 flex items-center">Wed</span>
                             <span className="h-5 flex items-center">Fri</span>
                           </div>
-                          
                           {Array.from({ length: 6 }).map((_, weekIdx) => {
                             // 6 columns (weeks), each 5 days (mon-fri approx) or 7 days.
                             // The original design had 30 days flat. Let's make it a realistic 7x5 or 5x6 grid.
@@ -1248,9 +1247,10 @@ export default function ArenaPage() {
                                   const dateStr = d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
                                   
                                   // Intensity based on 'activity'
-                                  const intensityClass = isActive 
-                                    ? ((daysAgo % 3 === 0) ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]" : "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.3)]")
-                                    : "bg-slate-100 dark:bg-neutral-700/50";
+                                  const intensityClass = isActive? ((daysAgo % 3 === 0)  
+                                  ? "bg-primary dark:bg-primary-light shadow-[0_0_8px_rgba(164,53,240,0.35)]"   
+                                  : "bg-primary/70 dark:bg-primary-light/70 shadow-[0_0_8px_rgba(164,53,240,0.25)]")
+                                  : "bg-slate-100 dark:bg-neutral-700/50";
 
                                   return (
                                     <div 
@@ -1277,9 +1277,9 @@ export default function ArenaPage() {
                         <span>Less</span>
                         <div className="flex gap-1">
                           <div className="w-3 h-3 rounded-[3px] bg-slate-100 dark:bg-neutral-700/50"></div>
-                          <div className="w-3 h-3 rounded-[3px] bg-amber-300"></div>
-                          <div className="w-3 h-3 rounded-[3px] bg-amber-400"></div>
-                          <div className="w-3 h-3 rounded-[3px] bg-amber-500"></div>
+                          <div className="w-3 h-3 rounded-[3px] bg-primary/40"></div>
+                          <div className="w-3 h-3 rounded-[3px] bg-primary/70"></div>
+                          <div className="w-3 h-3 rounded-[3px] bg-primary dark:bg-primary-light"></div>
                         </div>
                         <span>More</span>
                       </div>
