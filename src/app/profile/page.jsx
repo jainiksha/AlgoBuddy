@@ -855,7 +855,6 @@ export default function ProfilePage() {
                   </div>
                 </div>
               </div>
-            </div>
             <div className="grid content-center gap-4 border-t border-slate-100 pt-4 dark:border-neutral-800 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
               {[
                 [Code2, formatNumber(realStats.solvedCount), "Solved Problems", "text-violet-600 bg-violet-50 dark:bg-violet-950/40 dark:text-violet-300"],
