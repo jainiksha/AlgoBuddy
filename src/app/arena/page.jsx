@@ -646,7 +646,8 @@ export default function ArenaPage() {
             )}
 
             {activeTab !== "home" && (
-              <div className="bg-white dark:bg-neutral-800 border border-slate-100 dark:border-neutral-800/80 rounded-2xl p-6 shadow-sm min-h-[400px] flex flex-col justify-center items-center text-center">
+              <div className="bg-white dark:bg-neutral-800 border border-slate-100 dark:border-neutral-800/80 rounded-2xl p-6 shadow-sm">
+
 
                 {activeTab === "live" && (
                   <div className="w-full max-w-md space-y-3 text-left">
