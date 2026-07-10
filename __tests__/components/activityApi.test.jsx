@@ -8,6 +8,7 @@ jest.mock('@/lib/serverApi', () => ({
       eq: jest.fn().mockReturnThis(),
       gte: jest.fn().mockReturnThis(),
       order: jest.fn().mockResolvedValue({ data: [], error: null }),
+      maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
     })),
   })),
   getSupabaseServerClient: jest.fn(() => ({
@@ -17,6 +18,7 @@ jest.mock('@/lib/serverApi', () => ({
       eq: jest.fn().mockReturnThis(),
       gte: jest.fn().mockReturnThis(),
       order: jest.fn().mockResolvedValue({ data: [], error: null }),
+      maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
     })),
   })),
   jsonResponse: jest.fn((data, status = 200) => ({ data, status })),
