@@ -1,5 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
-import { getSupabaseConfig as _getSupabaseConfig } from "@/lib/shared-utils";
+import { getSupabaseConfig as _getSupabaseConfig } from "./shared-utils.js";
 
 // For testing purposes, allow overriding the dependency functions
 let cookiesImpl = null;
