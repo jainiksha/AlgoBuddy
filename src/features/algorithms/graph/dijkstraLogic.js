@@ -98,6 +98,8 @@ export function* dijkstraGenerator(adj, startNode, targetNode = null) {
     distances: { ...distances },
     pq: [],
     currentNode: null,
-    description: `Dijkstra's algorithm complete`,
+    description: (targetNode && !visited.has(targetNode))
+      ? `Target node ${targetNode} is unreachable.`
+      : `Dijkstra's algorithm complete`,
   };
 }
