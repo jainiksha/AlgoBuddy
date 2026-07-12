@@ -64,6 +64,22 @@ export const sections = [
     ],
   },
   {
+    title: "String",
+    slug: "string",
+    desc: "Pattern matching, string manipulation, and interview-based string algorithms",
+    subsections: [
+      {
+        title: "Basic Operations",
+        items: [
+          {
+            name: "Reverse String",
+            path: "/visualizer/string/reverse-string",
+          },
+        ],
+      },
+    ],
+  },  
+  {
     title: "Recursion",
     slug: "recursion",
     desc: "Understand stack frames, call stacks, base cases, and tree recursion through animated execution flow",
