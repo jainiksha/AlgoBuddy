@@ -20,6 +20,13 @@ export default function StringQuizClient() {
       href: "/visualizer/string/palindrome-check/quiz",
       filename: "palindrome_check_quiz.js",
     },
+    {
+      title: "Character Frequency Quiz",
+      description:
+        "Practice Character Frequency using maps, hashing, and frequency counting.",
+      href: "/visualizer/string/character-frequency/quiz",
+      filename: "character_frequency_quiz.js",
+    },
    
   ];
 
