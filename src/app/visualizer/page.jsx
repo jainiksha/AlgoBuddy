@@ -251,7 +251,7 @@ const sections = [
           },
           {
             name: "Minimum Window Substring",
-            path: "/visualizer/string/minimum-window",
+            path: "/visualizer/string/minimum-window-substring",
           },
         ],
       },
